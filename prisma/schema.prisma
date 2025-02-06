@@ -1,0 +1,136 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role     @default(ATTENDEE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  events          Event[]        @relation("OrganizedEvents")
+  tickets         Ticket[]
+  messages        Message[]
+  attendingEvents EventAttendee[]
+}
+
+// Event model
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  isVirtual   Boolean  @default(false)
+  virtualLink String?
+  capacity    Int
+  category    String
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  organizer      User           @relation("OrganizedEvents", fields: [organizerId], references: [id])
+  organizerId    String
+  tickets        Ticket[]
+  ticketTypes    TicketType[]
+  messages       Message[]
+  attendees      EventAttendee[]
+}
+
+// Ticket model
+model TicketType {
+  id          String   @id @default(uuid())
+  name        String
+  price       Float
+  quantity    Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  event       Event    @relation(fields: [eventId], references: [id])
+  eventId     String
+  tickets     Ticket[]
+}
+
+model Ticket {
+  id          String   @id @default(uuid())
+  purchaseDate DateTime @default(now())
+  status      TicketStatus @default(VALID)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+  event       Event   @relation(fields: [eventId], references: [id])
+  eventId     String
+  ticketType  TicketType @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId String
+}
+
+// Message model for event communications
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sender    User    @relation(fields: [senderId], references: [id])
+  senderId  String
+  event     Event   @relation(fields: [eventId], references: [id])
+  eventId   String
+}
+
+// Junction table for many-to-many relationship between events and attendees
+model EventAttendee {
+  id           String   @id @default(uuid())
+  attended     Boolean  @default(false)
+  attendedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  event        Event    @relation(fields: [eventId], references: [id])
+  eventId      String
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+
+  @@unique([eventId, userId])
+}
+
+// Enums
+enum Role {
+  ADMIN
+  ORGANIZER
+  ATTENDEE
+  SPONSOR
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+  EXPIRED
+}
