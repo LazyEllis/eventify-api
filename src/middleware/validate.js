@@ -24,7 +24,23 @@ const loginValidation = [
   body("password").notEmpty(),
 ];
 
+const eventValidation = [
+  body("title").notEmpty().trim(),
+  body("description").notEmpty(),
+  body("startDate").isISO8601().toDate(),
+  body("endDate").isISO8601().toDate(),
+  body("capacity").isInt({ min: 1 }),
+  body("category").notEmpty(),
+  body("isVirtual").isBoolean().optional(),
+  body("virtualLink").isURL().optional(),
+  body("location").optional(),
+];
+
+const categoryValidation = [body("name").notEmpty().trim()];
+
 module.exports = {
   validateRegistration: validate(registerValidation),
   validateLogin: validate(loginValidation),
+  validateEvent: validate(eventValidation),
+  validateCategory: validate(categoryValidation),
 };
