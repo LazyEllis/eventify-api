@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node --watch src/app.js",
+    "start": "NODE_ENV=development && node app.js",
+    "dev": "NODE_ENV=development && node --watch src/app.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "jest"
+    "test": "NODE_ENV=test && jest"
   },
   "repository": {
     "type": "git",
