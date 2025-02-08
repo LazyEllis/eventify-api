@@ -61,6 +61,15 @@ const searchValidation = [
   query("limit").optional().isInt({ min: 1, max: 50 }).toInt(),
 ];
 
+const messageValidation = [
+  body("content")
+    .notEmpty()
+    .withMessage("Message content is required")
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Message must be less than 1000 characters"),
+];
+
 module.exports = {
   validateRegistration: validate(registerValidation),
   validateLogin: validate(loginValidation),
@@ -69,4 +78,5 @@ module.exports = {
   validateTicketType: validate(ticketTypeValidation),
   validateTicketPurchase: validate(ticketPurchaseValidation),
   validateSearch: validate(searchValidation),
+  validateMessage: validate(messageValidation),
 };
