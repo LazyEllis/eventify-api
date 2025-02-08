@@ -6,9 +6,10 @@ const {
   updateEvent,
   deleteEvent,
   getEventCategories,
+  searchEvents,
 } = require("../controllers/eventController");
 const { protect } = require("../middleware/auth");
-const { validateEvent } = require("../middleware/validate");
+const { validateEvent, validateSearch } = require("../middleware/validate");
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.get("/categories", getEventCategories);
 router.get("/:id", getEvent);
 router.put("/:id", protect, validateEvent, updateEvent);
 router.delete("/:id", protect, deleteEvent);
+router.get("/search", validateSearch, searchEvents);
 
 module.exports = router;

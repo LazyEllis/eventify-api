@@ -105,6 +105,76 @@ const getEventCategories = asyncHandler(async (req, res) => {
   res.json(categories);
 });
 
+const searchEvents = asyncHandler(async (req, res) => {
+  const {
+    search,
+    category,
+    startDate,
+    endDate,
+    isVirtual,
+    page = 1,
+    limit = 10,
+  } = req.query;
+
+  // Build where clause based on filters
+  const where = {
+    status: "PUBLISHED",
+    ...(search && {
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ],
+    }),
+    ...(category && { category }),
+    ...(startDate && { startDate: { gte: new Date(startDate) } }),
+    ...(endDate && { endDate: { lte: new Date(endDate) } }),
+    ...(isVirtual !== undefined && { isVirtual: isVirtual === "true" }),
+  };
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        ticketTypes: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            quantity: true,
+          },
+        },
+        _count: {
+          select: { attendees: true },
+        },
+      },
+      skip,
+      take: Number(limit),
+      orderBy: { startDate: "asc" },
+    }),
+    prisma.event.count({ where }),
+  ]);
+
+  res.json({
+    events,
+    pagination: {
+      total,
+      pages: Math.ceil(total / limit),
+      page: Number(page),
+      limit: Number(limit),
+    },
+  });
+});
+
 module.exports = {
   createEvent,
   getEvents,
@@ -112,4 +182,5 @@ module.exports = {
   updateEvent,
   deleteEvent,
   getEventCategories,
+  searchEvents,
 };

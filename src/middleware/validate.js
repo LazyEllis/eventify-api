@@ -1,4 +1,4 @@
-const { validationResult, body } = require("express-validator");
+const { validationResult, body, query } = require("express-validator");
 
 const validate = (validations) => {
   return async (req, res, next) => {
@@ -51,6 +51,16 @@ const ticketPurchaseValidation = [
   body("quantity").isInt({ min: 1 }),
 ];
 
+const searchValidation = [
+  query("search").optional().trim(),
+  query("category").optional().trim(),
+  query("startDate").optional().isISO8601().toDate(),
+  query("endDate").optional().isISO8601().toDate(),
+  query("isVirtual").optional().isBoolean(),
+  query("page").optional().isInt({ min: 1 }).toInt(),
+  query("limit").optional().isInt({ min: 1, max: 50 }).toInt(),
+];
+
 module.exports = {
   validateRegistration: validate(registerValidation),
   validateLogin: validate(loginValidation),
@@ -58,4 +68,5 @@ module.exports = {
   validateCategory: validate(categoryValidation),
   validateTicketType: validate(ticketTypeValidation),
   validateTicketPurchase: validate(ticketPurchaseValidation),
+  validateSearch: validate(searchValidation),
 };
