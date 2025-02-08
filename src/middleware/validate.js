@@ -38,9 +38,24 @@ const eventValidation = [
 
 const categoryValidation = [body("name").notEmpty().trim()];
 
+const ticketTypeValidation = [
+  body("name").notEmpty().trim(),
+  body("price").isFloat({ min: 0 }),
+  body("quantity").isInt({ min: 1 }),
+  body("description").optional().trim(),
+];
+
+const ticketPurchaseValidation = [
+  body("eventId").notEmpty(),
+  body("ticketTypeId").notEmpty(),
+  body("quantity").isInt({ min: 1 }),
+];
+
 module.exports = {
   validateRegistration: validate(registerValidation),
   validateLogin: validate(loginValidation),
   validateEvent: validate(eventValidation),
   validateCategory: validate(categoryValidation),
+  validateTicketType: validate(ticketTypeValidation),
+  validateTicketPurchase: validate(ticketPurchaseValidation),
 };
