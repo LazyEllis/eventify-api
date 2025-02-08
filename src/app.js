@@ -5,6 +5,7 @@ const userRouter = require("./routes/userRouter");
 const eventRouter = require("./routes/eventRouter");
 const ticketRouter = require("./routes/ticketRouter");
 const messageRouter = require("./routes/messageRouter");
+const analyticsRouter = require("./routes/analyticsRouter");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/users", userRouter);
 app.use("/events", eventRouter);
 app.use("/tickets", ticketRouter);
 app.use("/", messageRouter);
+app.use("/analytics", analyticsRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
