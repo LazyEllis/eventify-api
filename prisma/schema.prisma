@@ -70,6 +70,7 @@ model Ticket {
   id          String   @id @default(uuid())
   purchaseDate DateTime @default(now())
   status      TicketStatus @default(VALID)
+  paymentReference String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -129,6 +130,7 @@ enum EventStatus {
 }
 
 enum TicketStatus {
+  PENDING
   VALID
   USED
   CANCELLED
