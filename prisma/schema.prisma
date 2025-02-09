@@ -48,6 +48,7 @@ model Event {
   ticketTypes    TicketType[]
   messages       Message[]
   attendees      EventAttendee[]
+  invitations    EventInvitation[]
 }
 
 // Ticket model
@@ -114,6 +115,19 @@ model EventAttendee {
   @@unique([eventId, userId])
 }
 
+model EventInvitation {
+  id        String           @id @default(uuid())
+  email     String
+  status    InvitationStatus @default(PENDING)
+  message   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  event     Event     @relation(fields: [eventId], references: [id])
+  eventId   String
+}
+
 // Enums
 enum Role {
   ADMIN
@@ -135,4 +149,10 @@ enum TicketStatus {
   USED
   CANCELLED
   EXPIRED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
 }

@@ -70,6 +70,19 @@ const messageValidation = [
     .withMessage("Message must be less than 1000 characters"),
 ];
 
+const inviteValidation = [
+  body("emails")
+    .isArray()
+    .withMessage("Emails must be an array")
+    .notEmpty()
+    .withMessage("Emails array cannot be empty"),
+  body("emails.*")
+    .isEmail()
+    .withMessage("Invalid email address")
+    .normalizeEmail(),
+  body("message").optional().trim().isLength({ max: 500 }),
+];
+
 module.exports = {
   validateRegistration: validate(registerValidation),
   validateLogin: validate(loginValidation),
@@ -79,4 +92,5 @@ module.exports = {
   validateTicketPurchase: validate(ticketPurchaseValidation),
   validateSearch: validate(searchValidation),
   validateMessage: validate(messageValidation),
+  validateInvite: validate(inviteValidation),
 };

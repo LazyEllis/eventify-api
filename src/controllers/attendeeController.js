@@ -1,0 +1,196 @@
+const asyncHandler = require("express-async-handler");
+const prisma = require("../config/database");
+const sendgrid = require("@sendgrid/mail");
+
+sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+
+const getEventAttendees = asyncHandler(async (req, res) => {
+  const eventId = req.params.id;
+
+  // Check if event exists and user has permission
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { organizer: true },
+  });
+
+  if (!event) {
+    return res.status(404).json({ message: "Event not found" });
+  }
+
+  // Check if user is organizer or admin
+  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
+    return res.status(403).json({ message: "Not authorized" });
+  }
+
+  // Get attendees with pagination
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const skip = (page - 1) * limit;
+
+  const [attendees, total] = await Promise.all([
+    prisma.eventAttendee.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.eventAttendee.count({
+      where: { eventId },
+    }),
+  ]);
+
+  res.json({
+    attendees,
+    pagination: {
+      total,
+      pages: Math.ceil(total / limit),
+      page,
+      limit,
+    },
+  });
+});
+
+const inviteAttendees = asyncHandler(async (req, res) => {
+  const eventId = req.params.id;
+  const { emails, message } = req.body;
+
+  // Check if event exists and user has permission
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { organizer: true },
+  });
+
+  if (!event) {
+    return res.status(404).json({ message: "Event not found" });
+  }
+
+  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
+    return res.status(403).json({ message: "Not authorized" });
+  }
+
+  // Send invitations
+  const invitePromises = emails.map(async (email) => {
+    try {
+      // Create invitation record
+      await prisma.eventInvitation.create({
+        data: {
+          email,
+          eventId,
+          status: "PENDING",
+          message,
+        },
+      });
+
+      // Send email
+      await sendgrid.send({
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL,
+        templateId: process.env.SENDGRID_INVITE_TEMPLATE,
+        dynamicTemplateData: {
+          eventName: event.title,
+          eventDate: event.startDate,
+          eventLocation: event.location,
+          inviterName: `${event.organizer.firstName} ${event.organizer.lastName}`,
+          message: message || "",
+          inviteLink: `${process.env.FRONTEND_URL}/events/${eventId}`,
+        },
+      });
+
+      return { email, status: "sent" };
+    } catch (error) {
+      console.error(`Failed to send invitation to ${email}:`, error);
+      return { email, status: "failed", error: error.message };
+    }
+  });
+
+  const results = await Promise.all(invitePromises);
+  res.status(200).json({ results });
+});
+
+const getAttendeeConnections = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const skip = (page - 1) * limit;
+
+  // Get all events user has attended or is attending
+  const [connections, total] = await Promise.all([
+    prisma.eventAttendee.findMany({
+      where: {
+        userId: req.user.id,
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            attendees: {
+              where: {
+                NOT: {
+                  userId: req.user.id,
+                },
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.eventAttendee.count({
+      where: {
+        userId: req.user.id,
+      },
+    }),
+  ]);
+
+  // Format connections by event
+  const formattedConnections = connections.map((connection) => ({
+    event: {
+      id: connection.event.id,
+      title: connection.event.title,
+      date: connection.event.startDate,
+    },
+    attendees: connection.event.attendees.map((attendee) => ({
+      id: attendee.user.id,
+      firstName: attendee.user.firstName,
+      lastName: attendee.user.lastName,
+      email: attendee.user.email,
+    })),
+  }));
+
+  res.json({
+    connections: formattedConnections,
+    pagination: {
+      total,
+      pages: Math.ceil(total / limit),
+      page,
+      limit,
+    },
+  });
+});
+
+module.exports = {
+  getEventAttendees,
+  inviteAttendees,
+  getAttendeeConnections,
+};
