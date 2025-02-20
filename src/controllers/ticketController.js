@@ -7,39 +7,6 @@ const {
   ForbiddenError,
 } = require("../utils/errors");
 
-const createTicketType = asyncHandler(async (req, res) => {
-  const event = await prisma.event.findUnique({
-    where: { id: req.params.id },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new ForbiddenError("Not authorized to create ticket type");
-  }
-
-  const ticketType = await prisma.ticketType.create({
-    data: {
-      ...req.body,
-      eventId: req.params.id,
-    },
-  });
-
-  res.status(201).json(ticketType);
-});
-
-const getTicketTypes = asyncHandler(async (req, res) => {
-  const ticketTypes = await prisma.ticketType.findMany({
-    where: {
-      eventId: req.params.id,
-    },
-  });
-
-  res.json(ticketTypes);
-});
-
 const purchaseTicket = asyncHandler(async (req, res) => {
   const { eventId, ticketTypeId, quantity } = req.body;
 
@@ -230,8 +197,6 @@ const getTicketDetails = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  createTicketType,
-  getTicketTypes,
   purchaseTicket,
   verifyPayment,
   getUserTickets,
