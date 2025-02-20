@@ -14,7 +14,7 @@ model User {
   password  String
   firstName String
   lastName  String
-  role      Role     @default(ATTENDEE)
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -131,9 +131,7 @@ model EventInvitation {
 // Enums
 enum Role {
   ADMIN
-  ORGANIZER
-  ATTENDEE
-  SPONSOR
+  USER
 }
 
 enum EventStatus {

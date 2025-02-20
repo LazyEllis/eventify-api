@@ -15,6 +15,7 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
     throw new NotFoundError("Event not found");
   }
 
+  // Allow access only to event organizer or admin
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
     throw new ForbiddenError("Not authorized to view analytics for this event");
   }
@@ -66,8 +67,9 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
 });
 
 const getSalesAnalytics = asyncHandler(async (req, res) => {
-  // Verify user is admin or organizer
-  if (!["ADMIN", "ORGANIZER"].includes(req.user.role)) {
+  // Only allow admin to view all sales analytics
+  // Regular users can only view their own event analytics
+  if (req.user.role !== "ADMIN" && req.user.role !== "USER") {
     throw new ForbiddenError("Not authorized to view sales analytics");
   }
 
@@ -85,7 +87,7 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
         gte: start,
         lte: end,
       },
-      ...(req.user.role === "ORGANIZER" && {
+      ...(req.user.role !== "ADMIN" && {
         event: {
           organizerId: req.user.id,
         },
@@ -118,8 +120,9 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
 });
 
 const getAttendanceAnalytics = asyncHandler(async (req, res) => {
-  // Verify user is admin or organizer
-  if (!["ADMIN", "ORGANIZER"].includes(req.user.role)) {
+  // Allow both admin and regular users to view attendance analytics
+  // Regular users can only view their own event analytics
+  if (req.user.role !== "ADMIN" && req.user.role !== "USER") {
     throw new ForbiddenError("Not authorized to view attendance analytics");
   }
 
@@ -135,7 +138,7 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
         gte: start,
         lte: end,
       },
-      ...(req.user.role === "ORGANIZER" && {
+      ...(req.user.role !== "ADMIN" && {
         organizerId: req.user.id,
       }),
     },
