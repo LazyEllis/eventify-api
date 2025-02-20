@@ -10,7 +10,7 @@ const {
 const purchaseTicket = asyncHandler(async (req, res) => {
   const { eventId, ticketTypeId, quantity } = req.body;
 
-  // Check ticket availability
+  // Check ticket availability and sale period
   const ticketType = await prisma.ticketType.findUnique({
     where: { id: ticketTypeId },
     include: { event: true },
@@ -18,6 +18,26 @@ const purchaseTicket = asyncHandler(async (req, res) => {
 
   if (!ticketType) {
     throw new NotFoundError("Ticket type not found");
+  }
+
+  const now = new Date();
+  if (now < ticketType.saleStartDate || now > ticketType.saleEndDate) {
+    throw new BadRequestError("Tickets are not currently on sale");
+  }
+
+  // Check max per user limit
+  const existingTickets = await prisma.ticket.count({
+    where: {
+      ticketTypeId,
+      userId: req.user.id,
+      status: "VALID",
+    },
+  });
+
+  if (existingTickets + quantity > ticketType.maxPerUser) {
+    throw new BadRequestError(
+      `Maximum ${ticketType.maxPerUser} tickets allowed per user`,
+    );
   }
 
   if (ticketType.availableQuantity < quantity) {

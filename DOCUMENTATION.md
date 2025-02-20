@@ -407,7 +407,7 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 
 ### Create Ticket Type
 
-**Endpoint:** `POST /events/:id/tickets`
+**Endpoint:** `POST /events/:id/ticket-types`
 
 **Description:** Create a new ticket type for an event.
 
@@ -426,7 +426,10 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
   "name": "VIP",
   "price": 100.0,
   "quantity": 50,
-  "description": "VIP ticket with special perks"
+  "description": "VIP ticket with special perks",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-11-01T10:00:00Z",
+  "saleEndDate": "2025-11-30T23:59:59Z"
 }
 ```
 
@@ -439,6 +442,9 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
   "price": 100.0,
   "quantity": 50,
   "description": "VIP ticket with special perks",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-11-01T10:00:00Z",
+  "saleEndDate": "2025-11-30T23:59:59Z",
   "eventId": "event-id",
   "createdAt": "2025-11-01T10:00:00Z",
   "updatedAt": "2025-11-01T10:00:00Z"
@@ -447,7 +453,7 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 
 ### Get Ticket Types
 
-**Endpoint:** `GET /events/:id/tickets`
+**Endpoint:** `GET /events/:id/ticket-types`
 
 **Description:** Get a list of ticket types for an event.
 
@@ -460,7 +466,10 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
     "name": "General Admission",
     "price": 50.0,
     "quantity": 100,
-    "description": "General admission ticket"
+    "description": "General admission ticket",
+    "maxPerUser": 4,
+    "saleStartDate": "2025-11-01T10:00:00Z",
+    "saleEndDate": "2025-11-30T23:59:59Z"
   }
 ]
 ```

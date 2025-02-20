@@ -43,6 +43,17 @@ const ticketTypeValidation = [
   body("price").isFloat({ min: 0 }),
   body("quantity").isInt({ min: 1 }),
   body("description").optional().trim(),
+  body("maxPerUser").isInt({ min: 1 }).default(10),
+  body("saleStartDate").isISO8601().toDate(),
+  body("saleEndDate")
+    .isISO8601()
+    .toDate()
+    .custom((value, { req }) => {
+      if (new Date(value) <= new Date(req.body.saleStartDate)) {
+        throw new Error("Sale end date must be after sale start date");
+      }
+      return true;
+    }),
 ];
 
 const ticketPurchaseValidation = [

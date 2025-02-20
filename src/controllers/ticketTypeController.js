@@ -1,6 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
+const {
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+} = require("../utils/errors");
 
 const createTicketType = asyncHandler(async (req, res) => {
   const event = await prisma.event.findUnique({
@@ -13,6 +17,14 @@ const createTicketType = asyncHandler(async (req, res) => {
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
     throw new ForbiddenError("Not authorized to create ticket type");
+  }
+
+  // Ensure sale dates are within event dates
+  const saleEndDate = new Date(req.body.saleEndDate);
+  const eventStartDate = new Date(event.startDate);
+
+  if (saleEndDate > eventStartDate) {
+    throw new BadRequestError("Ticket sales must end before event starts");
   }
 
   const ticketType = await prisma.ticketType.create({
