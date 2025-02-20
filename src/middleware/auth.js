@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/database");
+const { UnauthorizedError } = require("../utils/errors");
 
 const protect = async (req, res, next) => {
   let token;
@@ -7,22 +8,19 @@ const protect = async (req, res, next) => {
   if (req.headers.authorization?.startsWith("Bearer")) {
     try {
       token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || "your-secret-key",
-      );
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await prisma.user.findUnique({
         where: { id: decoded.id },
         select: { id: true, email: true, role: true },
       });
       next();
     } catch {
-      res.status(401).json({ message: "Not authorized" });
+      throw new UnauthorizedError("Not authorized");
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    throw new UnauthorizedError("Not authorized, no token");
   }
 };
 

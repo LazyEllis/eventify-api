@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
+const { NotFoundError, ForbiddenError } = require("../utils/errors");
 
 const createEvent = asyncHandler(async (req, res) => {
   const event = await prisma.event.create({
@@ -46,7 +47,7 @@ const getEvent = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   res.json(event);
@@ -58,11 +59,11 @@ const updateEvent = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to update this event");
   }
 
   const updatedEvent = await prisma.event.update({
@@ -79,11 +80,11 @@ const deleteEvent = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to delete this event");
   }
 
   await prisma.event.delete({

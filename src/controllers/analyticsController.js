@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
+const { NotFoundError, ForbiddenError } = require("../utils/errors");
 
 const getEventAnalytics = asyncHandler(async (req, res) => {
   const eventId = req.params.id;
@@ -11,11 +12,11 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to view analytics for this event");
   }
 
   // Get analytics data
@@ -67,7 +68,7 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
 const getSalesAnalytics = asyncHandler(async (req, res) => {
   // Verify user is admin or organizer
   if (!["ADMIN", "ORGANIZER"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to view sales analytics");
   }
 
   const { startDate, endDate } = req.query;
@@ -119,7 +120,7 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
 const getAttendanceAnalytics = asyncHandler(async (req, res) => {
   // Verify user is admin or organizer
   if (!["ADMIN", "ORGANIZER"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to view attendance analytics");
   }
 
   const { startDate, endDate } = req.query;

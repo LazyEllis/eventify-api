@@ -4,7 +4,7 @@ const {
   hashPassword,
   comparePassword,
 } = require("../utils/auth");
-
+const { BadRequestError, UnauthorizedError } = require("../utils/errors");
 const prisma = require("../config/database");
 
 const register = asyncHandler(async (req, res) => {
@@ -12,7 +12,7 @@ const register = asyncHandler(async (req, res) => {
 
   const userExists = await prisma.user.findUnique({ where: { email } });
   if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
+    throw new BadRequestError("User already exists");
   }
 
   const hashedPassword = await hashPassword(password);
@@ -39,7 +39,7 @@ const login = asyncHandler(async (req, res) => {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await comparePassword(password, user.password))) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    throw new UnauthorizedError("Invalid credentials");
   }
 
   res.json({

@@ -1,5 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
+const {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} = require("../utils/errors");
 
 const getVirtualEventLink = asyncHandler(async (req, res) => {
   const eventId = req.params.id;
@@ -10,11 +15,11 @@ const getVirtualEventLink = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (!event.isVirtual) {
-    return res.status(400).json({ message: "This is not a virtual event" });
+    throw new BadRequestError("This is not a virtual event");
   }
 
   // Check if user has a valid ticket
@@ -27,9 +32,7 @@ const getVirtualEventLink = asyncHandler(async (req, res) => {
   });
 
   if (!hasValidTicket) {
-    return res
-      .status(403)
-      .json({ message: "No valid ticket found for this event" });
+    throw new ForbiddenError("No valid ticket found for this event");
   }
 
   res.json({ virtualLink: event.virtualLink });
@@ -44,17 +47,17 @@ const recordVirtualAttendance = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (!event.isVirtual) {
-    return res.status(400).json({ message: "This is not a virtual event" });
+    throw new BadRequestError("This is not a virtual event");
   }
 
   // Check if event is ongoing
   const now = new Date();
   if (now < event.startDate || now > event.endDate) {
-    return res.status(400).json({ message: "Event is not currently active" });
+    throw new BadRequestError("Event is not currently active");
   }
 
   // Record or update attendance

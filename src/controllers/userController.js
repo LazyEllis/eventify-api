@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
-
 const prisma = require("../config/database");
+const { NotFoundError } = require("../utils/errors");
 
 const getProfile = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
@@ -13,6 +13,11 @@ const getProfile = asyncHandler(async (req, res) => {
       role: true,
     },
   });
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
   res.json(user);
 });
 

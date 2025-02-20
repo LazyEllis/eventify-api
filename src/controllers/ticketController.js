@@ -1,6 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
 const paystack = require("paystack-api")(process.env.PAYSTACK_SECRET_KEY);
+const {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} = require("../utils/errors");
 
 const createTicketType = asyncHandler(async (req, res) => {
   const event = await prisma.event.findUnique({
@@ -8,11 +13,11 @@ const createTicketType = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to create ticket type");
   }
 
   const ticketType = await prisma.ticketType.create({
@@ -45,11 +50,11 @@ const purchaseTicket = asyncHandler(async (req, res) => {
   });
 
   if (!ticketType) {
-    return res.status(404).json({ message: "Ticket type not found" });
+    throw new NotFoundError("Ticket type not found");
   }
 
-  if (ticketType.quantity < quantity) {
-    return res.status(400).json({ message: "Not enough tickets available" });
+  if (ticketType.availableQuantity < quantity) {
+    throw new BadRequestError("Not enough tickets available");
   }
 
   // Get user details for payment
@@ -214,11 +219,11 @@ const getTicketDetails = asyncHandler(async (req, res) => {
   });
 
   if (!ticket) {
-    return res.status(404).json({ message: "Ticket not found" });
+    throw new NotFoundError("Ticket not found");
   }
 
   if (ticket.userId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to view ticket details");
   }
 
   res.json(ticket);

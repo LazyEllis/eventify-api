@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
 const sendgrid = require("@sendgrid/mail");
+const { NotFoundError, ForbiddenError } = require("../utils/errors");
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -14,12 +15,11 @@ const getEventAttendees = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
-  // Check if user is organizer or admin
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized to view attendees for this event");
   }
 
   // Get attendees with pagination
@@ -70,11 +70,11 @@ const inviteAttendees = asyncHandler(async (req, res) => {
   });
 
   if (!event) {
-    return res.status(404).json({ message: "Event not found" });
+    throw new NotFoundError("Event not found");
   }
 
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    return res.status(403).json({ message: "Not authorized" });
+    throw new ForbiddenError("Not authorized");
   }
 
   // Send invitations
