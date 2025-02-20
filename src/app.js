@@ -24,5 +24,11 @@ app.use("/analytics", analyticsRouter);
 app.use("/", attendeeRouter);
 app.use("/", virtualEventRouter);
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(err.statusCode || 500).send(err.message);
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
