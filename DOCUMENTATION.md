@@ -405,6 +405,29 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 
 ## Tickets
 
+### Get Ticket Types
+
+**Endpoint:** `GET /events/:id/ticket-types`
+
+**Description:** Get a list of ticket types for an event.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "ticket-type-id",
+    "name": "General Admission",
+    "price": 50.0,
+    "quantity": 100,
+    "description": "General admission ticket",
+    "maxPerUser": 4,
+    "saleStartDate": "2025-11-01T10:00:00Z",
+    "saleEndDate": "2025-11-30T23:59:59Z"
+  }
+]
+```
+
 ### Create Ticket Type
 
 **Endpoint:** `POST /events/:id/ticket-types`
@@ -451,28 +474,67 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 }
 ```
 
-### Get Ticket Types
+### Update Ticket Type
 
-**Endpoint:** `GET /events/:id/ticket-types`
+**Endpoint:** `PUT /events/:id/ticket-types/:typeId`
 
-**Description:** Get a list of ticket types for an event.
+**Description:** Update an existing ticket type.
+
+**Headers:**
+
+```json
+{
+  "Authorization": "Bearer jwt-token"
+}
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "Early Bird",
+  "price": 75.0,
+  "quantity": 100,
+  "description": "Early bird discount tickets",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-11-01T10:00:00Z",
+  "saleEndDate": "2025-11-15T23:59:59Z"
+}
+```
 
 **Response:**
 
 ```json
-[
-  {
-    "id": "ticket-type-id",
-    "name": "General Admission",
-    "price": 50.0,
-    "quantity": 100,
-    "description": "General admission ticket",
-    "maxPerUser": 4,
-    "saleStartDate": "2025-11-01T10:00:00Z",
-    "saleEndDate": "2025-11-30T23:59:59Z"
-  }
-]
+{
+  "id": "ticket-type-id",
+  "name": "Early Bird",
+  "price": 75.0,
+  "quantity": 100,
+  "description": "Early bird discount tickets",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-11-01T10:00:00Z",
+  "saleEndDate": "2025-11-15T23:59:59Z",
+  "eventId": "event-id",
+  "createdAt": "2025-11-01T10:00:00Z",
+  "updatedAt": "2025-11-01T10:00:00Z"
+}
 ```
+
+### Delete Ticket Type
+
+**Endpoint:** `DELETE /events/:id/ticket-types/:typeId`
+
+**Description:** Delete a ticket type. Cannot delete if tickets have been sold.
+
+**Headers:**
+
+```json
+{
+  "Authorization": "Bearer jwt-token"
+}
+```
+
+**Response:** `204 No Content`
 
 ### Purchase Ticket
 
