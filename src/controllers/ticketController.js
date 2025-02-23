@@ -8,40 +8,62 @@ const {
 } = require("../utils/errors");
 
 const purchaseTicket = asyncHandler(async (req, res) => {
-  const { eventId, ticketTypeId, quantity } = req.body;
+  const { eventId, tickets } = req.body;
 
-  // Check ticket availability and sale period
-  const ticketType = await prisma.ticketType.findUnique({
-    where: { id: ticketTypeId },
+  // Get all ticket types and validate them
+  const ticketTypes = await prisma.ticketType.findMany({
+    where: {
+      id: { in: tickets.map((ticket) => ticket.ticketTypeId) },
+      eventId: eventId,
+    },
     include: { event: true },
   });
 
-  if (!ticketType) {
-    throw new NotFoundError("Ticket type not found");
+  if (ticketTypes.length !== tickets.length) {
+    throw new BadRequestError("One or more ticket types not found");
   }
 
   const now = new Date();
-  if (now < ticketType.saleStartDate || now > ticketType.saleEndDate) {
-    throw new BadRequestError("Tickets are not currently on sale");
-  }
 
-  // Check max per user limit
-  const existingTickets = await prisma.ticket.count({
-    where: {
-      ticketTypeId,
-      userId: req.user.id,
-      status: "VALID",
-    },
-  });
-
-  if (existingTickets + quantity > ticketType.maxPerUser) {
-    throw new BadRequestError(
-      `Maximum ${ticketType.maxPerUser} tickets allowed per user`,
+  // Validate tickets and calculate total amount
+  let totalAmountInKobo = 0;
+  for (const requestedTicket of tickets) {
+    const ticketType = ticketTypes.find(
+      (tt) => tt.id === requestedTicket.ticketTypeId,
     );
-  }
 
-  if (ticketType.availableQuantity < quantity) {
-    throw new BadRequestError("Not enough tickets available");
+    // Check sale period
+    if (now < ticketType.saleStartDate || now > ticketType.saleEndDate) {
+      throw new BadRequestError(
+        `Tickets of type ${ticketType.name} are not currently on sale`,
+      );
+    }
+
+    // Check max per user limit
+    const existingTickets = await prisma.ticket.count({
+      where: {
+        ticketTypeId: ticketType.id,
+        userId: req.user.id,
+        status: "VALID",
+      },
+    });
+
+    if (existingTickets + requestedTicket.quantity > ticketType.maxPerUser) {
+      throw new BadRequestError(
+        `Maximum ${ticketType.maxPerUser} tickets allowed per user for ${ticketType.name}`,
+      );
+    }
+
+    // Check availability
+    if (ticketType.quantity < requestedTicket.quantity) {
+      throw new BadRequestError(
+        `Not enough tickets available for ${ticketType.name}`,
+      );
+    }
+
+    totalAmountInKobo += Math.round(
+      ticketType.price * requestedTicket.quantity * 100,
+    );
   }
 
   // Get user details for payment
@@ -50,83 +72,87 @@ const purchaseTicket = asyncHandler(async (req, res) => {
     select: { email: true, firstName: true, lastName: true },
   });
 
-  // Create Paystack transaction
-  const amountInKobo = Math.round(ticketType.price * quantity * 100);
-
   try {
+    // Create Paystack transaction
     const transaction = await paystack.transaction.initialize({
       email: user.email,
-      amount: amountInKobo,
+      amount: totalAmountInKobo,
       currency: "NGN",
-      callback_url: `${process.env.FRONTEND_URL}/tickets/verify`,
+      callback_url: `${process.env.FRONTEND_URL}/payment/verify`,
       metadata: {
         eventId,
-        ticketTypeId,
         userId: req.user.id,
-        quantity,
+        tickets: tickets,
         custom_fields: [
           {
             display_name: "Event Name",
             variable_name: "event_name",
-            value: ticketType.event.title,
-          },
-          {
-            display_name: "Ticket Type",
-            variable_name: "ticket_type",
-            value: ticketType.name,
+            value: ticketTypes[0].event.title,
           },
         ],
       },
     });
 
     // Create tickets in pending state
-    const tickets = await prisma.$transaction(async (prisma) => {
-      // Update ticket type quantity
-      await prisma.ticketType.update({
-        where: { id: ticketTypeId },
-        data: {
-          quantity: {
-            decrement: quantity,
-          },
-        },
-      });
+    const createdTickets = await prisma.$transaction(async (prisma) => {
+      const allTickets = [];
 
-      // Create tickets
-      const tickets = [];
-      for (let i = 0; i < quantity; i++) {
-        const ticket = await prisma.ticket.create({
+      for (const requestedTicket of tickets) {
+        // Update ticket type quantity
+        await prisma.ticketType.update({
+          where: { id: requestedTicket.ticketTypeId },
           data: {
-            userId: req.user.id,
-            eventId,
-            ticketTypeId,
-            status: "PENDING", // Add PENDING to TicketStatus enum
-            paymentReference: transaction.data.reference, // Add this field to Ticket model
+            quantity: {
+              decrement: requestedTicket.quantity,
+            },
           },
         });
-        tickets.push(ticket);
+
+        // Create tickets for this type
+        for (let i = 0; i < requestedTicket.quantity; i++) {
+          const ticket = await prisma.ticket.create({
+            data: {
+              userId: req.user.id,
+              eventId,
+              ticketTypeId: requestedTicket.ticketTypeId,
+              status: "PENDING",
+              paymentReference: transaction.data.reference,
+            },
+          });
+          allTickets.push(ticket);
+        }
       }
 
-      return tickets;
+      return allTickets;
     });
 
     res.status(201).json({
-      tickets,
+      tickets: createdTickets,
       authorizationUrl: transaction.data.authorization_url,
       reference: transaction.data.reference,
     });
   } catch (error) {
     console.error("Paystack Error:", error);
-    res.status(500).json({ message: "Payment initialization failed" });
+    throw new BadRequestError("Payment initialization failed");
   }
 });
 
 const verifyPayment = asyncHandler(async (req, res) => {
   const { reference } = req.query;
 
-  try {
-    const response = await paystack.transaction.verify(reference);
+  if (!reference) {
+    throw new BadRequestError("Payment reference is required");
+  }
 
-    if (response.data.status === "success") {
+  try {
+    // First verify the transaction exists
+    const transaction = await paystack.transaction.verify({ reference });
+
+    if (!transaction || !transaction.data) {
+      throw new BadRequestError("Invalid payment reference");
+    }
+
+    if (transaction.data.status === "success") {
       // Update tickets status
       await prisma.ticket.updateMany({
         where: { paymentReference: reference },
@@ -135,19 +161,29 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
       res.json({ message: "Payment verified successfully" });
     } else {
-      // Revert ticket quantity and mark tickets as cancelled
+      // Revert ticket quantities and mark tickets as cancelled
       const tickets = await prisma.ticket.findMany({
         where: { paymentReference: reference },
+        select: {
+          id: true,
+          ticketTypeId: true,
+        },
       });
 
       await prisma.$transaction(async (prisma) => {
-        // Restore ticket type quantity
-        for (const ticket of tickets) {
+        // Group tickets by ticket type for efficient updates
+        const ticketCounts = tickets.reduce((acc, ticket) => {
+          acc[ticket.ticketTypeId] = (acc[ticket.ticketTypeId] || 0) + 1;
+          return acc;
+        }, {});
+
+        // Restore ticket type quantities
+        for (const [ticketTypeId, count] of Object.entries(ticketCounts)) {
           await prisma.ticketType.update({
-            where: { id: ticket.ticketTypeId },
+            where: { id: ticketTypeId },
             data: {
               quantity: {
-                increment: 1,
+                increment: count,
               },
             },
           });
@@ -164,7 +200,11 @@ const verifyPayment = asyncHandler(async (req, res) => {
     }
   } catch (error) {
     console.error("Paystack Verification Error:", error);
-    res.status(500).json({ message: "Payment verification failed" });
+
+    // Return a more specific error message
+    throw new BadRequestError(
+      "Payment verification failed. Please check the reference number or try again later.",
+    );
   }
 });
 

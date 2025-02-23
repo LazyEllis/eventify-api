@@ -540,7 +540,7 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 
 **Endpoint:** `POST /tickets/purchase`
 
-**Description:** Purchase tickets for an event.
+**Description:** Purchase multiple tickets of different types for an event.
 
 **Headers:**
 
@@ -555,8 +555,16 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 ```json
 {
   "eventId": "event-id",
-  "ticketTypeId": "ticket-type-id",
-  "quantity": 2
+  "tickets": [
+    {
+      "ticketTypeId": "ticket-type-id-1",
+      "quantity": 2
+    },
+    {
+      "ticketTypeId": "ticket-type-id-2",
+      "quantity": 1
+    }
+  ]
 }
 ```
 
@@ -566,13 +574,35 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 {
   "tickets": [
     {
-      "id": "ticket-id",
+      "id": "ticket-id-1",
       "purchaseDate": "2025-11-01T10:00:00Z",
       "status": "PENDING",
       "paymentReference": "payment-reference",
       "userId": "user-id",
       "eventId": "event-id",
-      "ticketTypeId": "ticket-type-id",
+      "ticketTypeId": "ticket-type-id-1",
+      "createdAt": "2025-11-01T10:00:00Z",
+      "updatedAt": "2025-11-01T10:00:00Z"
+    },
+    {
+      "id": "ticket-id-2",
+      "purchaseDate": "2025-11-01T10:00:00Z",
+      "status": "PENDING",
+      "paymentReference": "payment-reference",
+      "userId": "user-id",
+      "eventId": "event-id",
+      "ticketTypeId": "ticket-type-id-1",
+      "createdAt": "2025-11-01T10:00:00Z",
+      "updatedAt": "2025-11-01T10:00:00Z"
+    },
+    {
+      "id": "ticket-id-3",
+      "purchaseDate": "2025-11-01T10:00:00Z",
+      "status": "PENDING",
+      "paymentReference": "payment-reference",
+      "userId": "user-id",
+      "eventId": "event-id",
+      "ticketTypeId": "ticket-type-id-2",
       "createdAt": "2025-11-01T10:00:00Z",
       "updatedAt": "2025-11-01T10:00:00Z"
     }

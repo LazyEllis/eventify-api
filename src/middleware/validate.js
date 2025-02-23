@@ -57,9 +57,17 @@ const ticketTypeValidation = [
 ];
 
 const ticketPurchaseValidation = [
-  body("eventId").notEmpty(),
-  body("ticketTypeId").notEmpty(),
-  body("quantity").isInt({ min: 1 }),
+  body("eventId").notEmpty().isString(),
+  body("tickets")
+    .isArray({ min: 1 })
+    .withMessage("At least one ticket must be specified"),
+  body("tickets.*.ticketTypeId")
+    .notEmpty()
+    .isString()
+    .withMessage("Valid ticket type ID required"),
+  body("tickets.*.quantity")
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
 ];
 
 const searchValidation = [
