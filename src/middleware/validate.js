@@ -1,7 +1,8 @@
+const asyncHandler = require("express-async-handler");
 const { validationResult, body, query } = require("express-validator");
 
-const validate = (validations) => {
-  return async (req, res, next) => {
+const validate = (validations) =>
+  asyncHandler(async (req, res, next) => {
     await Promise.all(validations.map((validation) => validation.run(req)));
 
     const errors = validationResult(req);
@@ -9,22 +10,21 @@ const validate = (validations) => {
       return res.status(400).json({ errors: errors.array() });
     }
     next();
-  };
-};
+  });
 
-const registerValidation = [
+const validateRegistration = validate([
   body("email").isEmail().normalizeEmail(),
   body("password").isLength({ min: 6 }),
   body("firstName").notEmpty(),
   body("lastName").notEmpty(),
-];
+]);
 
-const loginValidation = [
+const validateLogin = validate([
   body("email").isEmail().normalizeEmail(),
   body("password").notEmpty(),
-];
+]);
 
-const eventValidation = [
+const validateEvent = validate([
   body("title").notEmpty().trim(),
   body("description").notEmpty(),
   body("startDate").isISO8601().toDate(),
@@ -34,11 +34,11 @@ const eventValidation = [
   body("isVirtual").isBoolean().optional(),
   body("virtualLink").isURL().optional(),
   body("location").optional(),
-];
+]);
 
-const categoryValidation = [body("name").notEmpty().trim()];
+const validateCategory = validate([body("name").notEmpty().trim()]);
 
-const ticketTypeValidation = [
+const validateTicketType = validate([
   body("name").notEmpty().trim(),
   body("price").isFloat({ min: 0 }),
   body("quantity").isInt({ min: 1 }),
@@ -54,9 +54,9 @@ const ticketTypeValidation = [
       }
       return true;
     }),
-];
+]);
 
-const ticketPurchaseValidation = [
+const validateTicketPurchase = validate([
   body("eventId").notEmpty().isString(),
   body("tickets")
     .isArray({ min: 1 })
@@ -68,9 +68,9 @@ const ticketPurchaseValidation = [
   body("tickets.*.quantity")
     .isInt({ min: 1 })
     .withMessage("Quantity must be at least 1"),
-];
+]);
 
-const searchValidation = [
+const validateSearch = validate([
   query("search").optional().trim(),
   query("category").optional().trim(),
   query("startDate").optional().isISO8601().toDate(),
@@ -78,18 +78,18 @@ const searchValidation = [
   query("isVirtual").optional().isBoolean(),
   query("page").optional().isInt({ min: 1 }).toInt(),
   query("limit").optional().isInt({ min: 1, max: 50 }).toInt(),
-];
+]);
 
-const messageValidation = [
+const validateMessage = validate([
   body("content")
     .notEmpty()
     .withMessage("Message content is required")
     .trim()
     .isLength({ max: 1000 })
     .withMessage("Message must be less than 1000 characters"),
-];
+]);
 
-const inviteValidation = [
+const validateInvite = validate([
   body("emails")
     .isArray()
     .withMessage("Emails must be an array")
@@ -100,16 +100,16 @@ const inviteValidation = [
     .withMessage("Invalid email address")
     .normalizeEmail(),
   body("message").optional().trim().isLength({ max: 500 }),
-];
+]);
 
 module.exports = {
-  validateRegistration: validate(registerValidation),
-  validateLogin: validate(loginValidation),
-  validateEvent: validate(eventValidation),
-  validateCategory: validate(categoryValidation),
-  validateTicketType: validate(ticketTypeValidation),
-  validateTicketPurchase: validate(ticketPurchaseValidation),
-  validateSearch: validate(searchValidation),
-  validateMessage: validate(messageValidation),
-  validateInvite: validate(inviteValidation),
+  validateRegistration,
+  validateLogin,
+  validateEvent,
+  validateCategory,
+  validateTicketType,
+  validateTicketPurchase,
+  validateSearch,
+  validateMessage,
+  validateInvite,
 };
