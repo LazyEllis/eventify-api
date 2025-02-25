@@ -790,37 +790,24 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 }
 ```
 
-**Query Parameters:**
-
-- `page` (optional): Page number for pagination.
-- `limit` (optional): Number of results per page.
-
 **Response:**
 
 ```json
-{
-  "messages": [
-    {
-      "id": "message-id",
-      "content": "This is a message",
-      "createdAt": "2025-11-01T10:00:00Z",
-      "updatedAt": "2025-11-01T10:00:00Z",
-      "senderId": "user-id",
-      "eventId": "event-id",
-      "sender": {
-        "id": "user-id",
-        "firstName": "John",
-        "lastName": "Doe"
-      }
+[
+  {
+    "id": "message-id",
+    "content": "This is a message",
+    "createdAt": "2025-11-01T10:00:00Z",
+    "updatedAt": "2025-11-01T10:00:00Z",
+    "senderId": "user-id",
+    "eventId": "event-id",
+    "sender": {
+      "id": "user-id",
+      "firstName": "John",
+      "lastName": "Doe"
     }
-  ],
-  "pagination": {
-    "total": 1,
-    "pages": 1,
-    "page": 1,
-    "limit": 50
   }
-}
+]
 ```
 
 ## Analytics

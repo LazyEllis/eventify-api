@@ -38,9 +38,6 @@ const sendMessage = asyncHandler(async (req, res) => {
 
 const getEventMessages = asyncHandler(async (req, res) => {
   const eventId = req.params.id;
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 50;
-  const skip = (page - 1) * limit;
 
   // Check if event exists
   const event = await prisma.event.findUnique({
@@ -51,39 +48,24 @@ const getEventMessages = asyncHandler(async (req, res) => {
     throw new NotFoundError("Event not found");
   }
 
-  // Get messages with pagination
-  const [messages, total] = await Promise.all([
-    prisma.message.findMany({
-      where: { eventId },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
+  // Get messages
+  const messages = await prisma.message.findMany({
+    where: { eventId },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.message.count({
-      where: { eventId },
-    }),
-  ]);
-
-  res.json({
-    messages,
-    pagination: {
-      total,
-      pages: Math.ceil(total / limit),
-      page,
-      limit,
+    },
+    orderBy: {
+      createdAt: "desc",
     },
   });
+
+  res.json(messages);
 });
 
 module.exports = {
