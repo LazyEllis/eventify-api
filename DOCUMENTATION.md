@@ -715,11 +715,21 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
     "endDate": "2025-12-01T18:00:00Z",
     "location": "Event Location",
     "isVirtual": false,
-    "virtualLink": "https://virtual.event.link"
+    "virtualLink": "https://virtual.event.link",
+    "organizer": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com"
+    }
   },
   "ticketType": {
     "name": "General Admission",
     "price": 50.0
+  },
+  "user": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "email": "jane.doe@example.com"
   }
 }
 ```

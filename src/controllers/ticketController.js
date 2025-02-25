@@ -240,8 +240,25 @@ const getTicketDetails = asyncHandler(async (req, res) => {
   const ticket = await prisma.ticket.findUnique({
     where: { id: req.params.id },
     include: {
-      event: true,
+      event: {
+        include: {
+          organizer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
       ticketType: true,
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
     },
   });
 
