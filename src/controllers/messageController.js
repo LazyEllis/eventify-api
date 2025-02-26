@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
 const { NotFoundError } = require("../utils/errors");
+const { getIO } = require("../services/socketService");
 
 const sendMessage = asyncHandler(async (req, res) => {
   const { content } = req.body;
@@ -33,6 +34,9 @@ const sendMessage = asyncHandler(async (req, res) => {
     },
   });
 
+  // Emit the message to all users in the event room
+  getIO().to(`event-${eventId}`).emit("new-message", message);
+
   res.status(201).json(message);
 });
 
@@ -59,9 +63,6 @@ const getEventMessages = asyncHandler(async (req, res) => {
           lastName: true,
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
     },
   });
 

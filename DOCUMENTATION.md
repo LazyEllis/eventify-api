@@ -740,7 +740,7 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 
 **Endpoint:** `POST /events/:id/messages`
 
-**Description:** Send a message to an event.
+**Description:** Send a message to an event. Messages are delivered in real-time to all connected users in the event room.
 
 **Headers:**
 
@@ -809,6 +809,80 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
   }
 ]
 ```
+
+### Real-time Messages
+
+Messages are delivered in real-time using Socket.IO. To receive real-time messages:
+
+1. Connect to the WebSocket server:
+
+```javascript
+const socket = io("http://your-api-url", {
+  auth: {
+    token: "your-jwt-token",
+  },
+});
+```
+
+2. Join an event room to receive messages for that event:
+
+```javascript
+socket.emit("join-event", "event-id");
+```
+
+3. Listen for new messages:
+
+```javascript
+socket.on("new-message", (message) => {
+  console.log("New message received:", message);
+});
+```
+
+4. Leave an event room when done:
+
+```javascript
+socket.emit("leave-event", "event-id");
+```
+
+### Subscribe to Event
+
+**Endpoint:** `POST /events/:id/subscribe`
+
+**Description:** Subscribe to an event to receive real-time messages. User must have a valid ticket or be the event organizer.
+
+**Headers:**
+
+```json
+{
+  "Authorization": "Bearer jwt-token"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Subscribed to event"
+}
+```
+
+### WebSocket Events
+
+| Event         | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| `connect`     | Fired when socket connection is established           |
+| `disconnect`  | Fired when socket connection is closed                |
+| `join-event`  | Join an event room to receive messages                |
+| `leave-event` | Leave an event room                                   |
+| `new-message` | Received when a new message is sent to the event room |
+
+### Error Handling
+
+The WebSocket connection includes authentication using JWT tokens. Common errors:
+
+- Authentication error: Invalid or missing token
+- User not found: Token refers to non-existent user
+- Connection error: Unable to establish WebSocket connection
 
 ## Analytics
 
