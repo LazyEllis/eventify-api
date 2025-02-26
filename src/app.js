@@ -30,7 +30,7 @@ app.use("/tickets", ticketRouter);
 app.use("/", ticketTypeRouter);
 app.use("/", messageRouter);
 app.use("/", subscriptionRouter);
-app.use("/analytics", analyticsRouter);
+app.use("/", analyticsRouter);
 app.use("/", attendeeRouter);
 app.use("/", virtualEventRouter);
 

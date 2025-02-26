@@ -9,7 +9,7 @@ const { protect } = require("../middleware/auth");
 const router = express.Router();
 
 router.get("/events/:id/analytics", protect, getEventAnalytics);
-router.get("/sales", protect, getSalesAnalytics);
-router.get("/attendance", protect, getAttendanceAnalytics);
+router.get("/analytics/sales", protect, getSalesAnalytics);
+router.get("/analytics/attendance", protect, getAttendanceAnalytics);
 
 module.exports = router;
