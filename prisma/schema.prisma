@@ -46,7 +46,7 @@ model Event {
   organizerId    String
   tickets        Ticket[]
   ticketTypes    TicketType[]
-  messages       Message[]
+  messages       Message[]       @relation("EventMessages")
   attendees      EventAttendee[]
   invitations    EventInvitation[]
 }
@@ -97,7 +97,7 @@ model Message {
   // Relations
   sender    User    @relation(fields: [senderId], references: [id])
   senderId  String
-  event     Event   @relation(fields: [eventId], references: [id])
+  event     Event   @relation("EventMessages", fields: [eventId], references: [id], onDelete: Cascade)
   eventId   String
 }
 
