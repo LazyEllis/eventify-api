@@ -23,40 +23,21 @@ const getEventAttendees = asyncHandler(async (req, res) => {
   }
 
   // Get attendees with pagination
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 50;
-  const skip = (page - 1) * limit;
-
-  const [attendees, total] = await Promise.all([
-    prisma.eventAttendee.findMany({
-      where: { eventId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
+  const attendees = await prisma.eventAttendee.findMany({
+    where: { eventId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
         },
       },
-      skip,
-      take: limit,
-    }),
-    prisma.eventAttendee.count({
-      where: { eventId },
-    }),
-  ]);
-
-  res.json({
-    attendees,
-    pagination: {
-      total,
-      pages: Math.ceil(total / limit),
-      page,
-      limit,
     },
   });
+
+  res.json(attendees);
 });
 
 const inviteAttendees = asyncHandler(async (req, res) => {
@@ -132,51 +113,38 @@ const inviteAttendees = asyncHandler(async (req, res) => {
 });
 
 const getAttendeeConnections = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 50;
-  const skip = (page - 1) * limit;
-
   // Get all events user has attended or is attending
-  const [connections, total] = await Promise.all([
-    prisma.eventAttendee.findMany({
-      where: {
-        userId: req.user.id,
-      },
-      include: {
-        event: {
-          select: {
-            id: true,
-            title: true,
-            startDate: true,
-            attendees: {
-              where: {
-                NOT: {
-                  userId: req.user.id,
-                },
+  const connections = await prisma.eventAttendee.findMany({
+    where: {
+      userId: req.user.id,
+    },
+    include: {
+      event: {
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          attendees: {
+            where: {
+              NOT: {
+                userId: req.user.id,
               },
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
                 },
               },
             },
           },
         },
       },
-      skip,
-      take: limit,
-    }),
-    prisma.eventAttendee.count({
-      where: {
-        userId: req.user.id,
-      },
-    }),
-  ]);
+    },
+  });
 
   // Format connections by event
   const formattedConnections = connections.map((connection) => ({
@@ -193,15 +161,7 @@ const getAttendeeConnections = asyncHandler(async (req, res) => {
     })),
   }));
 
-  res.json({
-    connections: formattedConnections,
-    pagination: {
-      total,
-      pages: Math.ceil(total / limit),
-      page,
-      limit,
-    },
-  });
+  res.json(formattedConnections);
 });
 
 module.exports = {

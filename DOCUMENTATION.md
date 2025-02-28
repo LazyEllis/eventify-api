@@ -1007,22 +1007,14 @@ The WebSocket connection includes authentication using JWT tokens. Common errors
 **Response:**
 
 ```json
-{
-  "attendees": [
-    {
-      "id": "attendee-id",
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john.doe@example.com"
-    }
-  ],
-  "pagination": {
-    "total": 1,
-    "pages": 1,
-    "page": 1,
-    "limit": 50
+[
+  {
+    "id": "attendee-id",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com"
   }
-}
+]
 ```
 
 ### Invite Attendees
@@ -1078,31 +1070,23 @@ The WebSocket connection includes authentication using JWT tokens. Common errors
 **Response:**
 
 ```json
-{
-  "connections": [
-    {
-      "event": {
-        "id": "event-id",
-        "title": "Event Title",
-        "date": "2025-12-01T10:00:00Z"
-      },
-      "attendees": [
-        {
-          "id": "attendee-id",
-          "firstName": "Jane",
-          "lastName": "Doe",
-          "email": "jane.doe@example.com"
-        }
-      ]
-    }
-  ],
-  "pagination": {
-    "total": 1,
-    "pages": 1,
-    "page": 1,
-    "limit": 50
+[
+  {
+    "event": {
+      "id": "event-id",
+      "title": "Event Title",
+      "date": "2025-12-01T10:00:00Z"
+    },
+    "attendees": [
+      {
+        "id": "attendee-id",
+        "firstName": "Jane",
+        "lastName": "Doe",
+        "email": "jane.doe@example.com"
+      }
+    ]
   }
-}
+]
 ```
 
 ## Virtual Events
