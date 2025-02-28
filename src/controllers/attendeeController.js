@@ -66,7 +66,9 @@ const inviteAttendees = asyncHandler(async (req, res) => {
   // Check if event exists and user has permission
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    include: { organizer: true },
+    include: {
+      organizer: true,
+    },
   });
 
   if (!event) {
@@ -76,6 +78,17 @@ const inviteAttendees = asyncHandler(async (req, res) => {
   if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
     throw new ForbiddenError("Not authorized");
   }
+
+  // Format date for email template
+  const eventDate = new Date(event.startDate).toLocaleString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    timeZoneName: "short",
+  });
 
   // Send invitations
   const invitePromises = emails.map(async (email) => {
@@ -90,16 +103,18 @@ const inviteAttendees = asyncHandler(async (req, res) => {
         },
       });
 
-      // Send email
+      // Send email with all template variables
       await sendgrid.send({
         to: email,
         from: process.env.SENDGRID_FROM_EMAIL,
         templateId: process.env.SENDGRID_INVITE_TEMPLATE,
         dynamicTemplateData: {
-          eventName: event.title,
-          eventDate: event.startDate,
-          eventLocation: event.location,
           inviterName: `${event.organizer.firstName} ${event.organizer.lastName}`,
+          eventName: event.title,
+          eventDate: eventDate,
+          isVirtual: event.isVirtual,
+          eventLocation: event.location || "",
+          eventDescription: event.description,
           message: message || "",
           inviteLink: `${process.env.FRONTEND_URL}/events/${eventId}`,
         },
