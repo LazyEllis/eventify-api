@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const { validationResult, body, query } = require("express-validator");
+const { validationResult, body } = require("express-validator");
 
 const validate = (validations) =>
   asyncHandler(async (req, res, next) => {
@@ -36,8 +36,6 @@ const validateEvent = validate([
   body("location").optional(),
 ]);
 
-const validateCategory = validate([body("name").notEmpty().trim()]);
-
 const validateTicketType = validate([
   body("name").notEmpty().trim(),
   body("price").isFloat({ min: 0 }),
@@ -70,16 +68,6 @@ const validateTicketPurchase = validate([
     .withMessage("Quantity must be at least 1"),
 ]);
 
-const validateSearch = validate([
-  query("search").optional().trim(),
-  query("category").optional().trim(),
-  query("startDate").optional().isISO8601().toDate(),
-  query("endDate").optional().isISO8601().toDate(),
-  query("isVirtual").optional().isBoolean(),
-  query("page").optional().isInt({ min: 1 }).toInt(),
-  query("limit").optional().isInt({ min: 1, max: 50 }).toInt(),
-]);
-
 const validateMessage = validate([
   body("content")
     .notEmpty()
@@ -106,10 +94,8 @@ module.exports = {
   validateRegistration,
   validateLogin,
   validateEvent,
-  validateCategory,
   validateTicketType,
   validateTicketPurchase,
-  validateSearch,
   validateMessage,
   validateInvite,
 };
