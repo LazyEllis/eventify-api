@@ -31,6 +31,39 @@ const getEvents = asyncHandler(async (req, res) => {
   res.json(events);
 });
 
+const getUserEvents = asyncHandler(async (req, res) => {
+  const events = await prisma.event.findMany({
+    where: {
+      organizerId: req.user.id,
+    },
+    include: {
+      organizer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      _count: {
+        select: {
+          tickets: true,
+          attendees: {
+            where: {
+              attended: true,
+            },
+          },
+        },
+      },
+      ticketTypes: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  res.json(events);
+});
+
 const getEvent = asyncHandler(async (req, res) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
@@ -73,6 +106,7 @@ const deleteEvent = asyncHandler(async (req, res) => {
 module.exports = {
   createEvent,
   getEvents,
+  getUserEvents,
   getEvent,
   updateEvent,
   deleteEvent,
