@@ -1,37 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
 const { getIO } = require("../services/socketService");
 
 const sendMessage = asyncHandler(async (req, res) => {
   const { content } = req.body;
-  const eventId = req.params.id;
-
-  // Check if event exists
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  // Check if user has access to the event (has a valid ticket or is the organizer)
-  const hasAccess = await prisma.ticket.findFirst({
-    where: {
-      eventId,
-      userId: req.user.id,
-      status: "VALID",
-    },
-  });
-
-  if (
-    !hasAccess &&
-    event.organizerId !== req.user.id &&
-    req.user.role !== "ADMIN"
-  ) {
-    throw new ForbiddenError("Not authorized to send messages in this event");
-  }
+  const eventId = req.event.id;
 
   // Create message
   const message = await prisma.message.create({
@@ -58,33 +31,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 });
 
 const getEventMessages = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
-
-  // Check if event exists
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  // Check if user has access to the event (has a valid ticket or is the organizer)
-  const hasAccess = await prisma.ticket.findFirst({
-    where: {
-      eventId,
-      userId: req.user.id,
-      status: "VALID",
-    },
-  });
-
-  if (
-    !hasAccess &&
-    event.organizerId !== req.user.id &&
-    req.user.role !== "ADMIN"
-  ) {
-    throw new ForbiddenError("Not authorized to view messages in this event");
-  }
+  const eventId = req.event.id;
 
   // Get messages
   const messages = await prisma.message.findMany({

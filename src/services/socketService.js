@@ -4,6 +4,33 @@ const prisma = require("../config/database");
 
 let io;
 
+// Helper function to check event access (similar to the middleware)
+const checkEventAccess = async (userId, eventId, userRole) => {
+  // Check if event exists
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+  });
+
+  if (!event) {
+    return { access: false, error: "Event not found" };
+  }
+
+  // Check if user has access (valid ticket or is organizer/admin)
+  const hasAccess = await prisma.ticket.findFirst({
+    where: {
+      eventId,
+      userId: userId,
+      status: "VALID",
+    },
+  });
+
+  if (!hasAccess && event.organizerId !== userId && userRole !== "ADMIN") {
+    return { access: false, error: "Not authorized to access this event" };
+  }
+
+  return { access: true, event };
+};
+
 const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
@@ -41,33 +68,15 @@ const initializeSocket = (server) => {
 
     socket.on("join-event", async (eventId) => {
       try {
-        // Check if the user has permission to join this event room
-        const event = await prisma.event.findUnique({
-          where: { id: eventId },
-        });
+        // Use helper function to check access
+        const { access, error } = await checkEventAccess(
+          socket.user.id,
+          eventId,
+          socket.user.role,
+        );
 
-        if (!event) {
-          socket.emit("error", { message: "Event not found" });
-          return;
-        }
-
-        // Check if user has access to the event (has a valid ticket or is the organizer)
-        const hasAccess = await prisma.ticket.findFirst({
-          where: {
-            eventId,
-            userId: socket.user.id,
-            status: "VALID",
-          },
-        });
-
-        if (
-          !hasAccess &&
-          event.organizerId !== socket.user.id &&
-          socket.user.role !== "ADMIN"
-        ) {
-          socket.emit("error", {
-            message: "Not authorized to join this event room",
-          });
+        if (!access) {
+          socket.emit("error", { message: error });
           return;
         }
 
@@ -85,31 +94,15 @@ const initializeSocket = (server) => {
     // Handle typing events
     socket.on("typing", async ({ eventId, isTyping }) => {
       try {
-        // Verify user has permission
-        const event = await prisma.event.findUnique({
-          where: { id: eventId },
-        });
+        // Use helper function to check access
+        const { access, error } = await checkEventAccess(
+          socket.user.id,
+          eventId,
+          socket.user.role,
+        );
 
-        if (!event) {
-          socket.emit("error", { message: "Event not found" });
-          return;
-        }
-
-        // Check if user has access to the event (has a valid ticket or is the organizer)
-        const hasAccess = await prisma.ticket.findFirst({
-          where: {
-            eventId,
-            userId: socket.user.id,
-            status: "VALID",
-          },
-        });
-
-        if (
-          !hasAccess &&
-          event.organizerId !== socket.user.id &&
-          socket.user.role !== "ADMIN"
-        ) {
-          socket.emit("error", { message: "Not authorized for this event" });
+        if (!access) {
+          socket.emit("error", { message: error });
           return;
         }
 

@@ -1,24 +1,10 @@
+// src/controllers/analyticsController.js
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
+const { ForbiddenError } = require("../utils/errors");
 
 const getEventAnalytics = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
-
-  // Check if event exists and user has permission
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { organizer: true },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  // Allow access only to event organizer or admin
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new ForbiddenError("Not authorized to view analytics for this event");
-  }
+  const eventId = req.event.id; // Use event from middleware
 
   // Get analytics data
   const [ticketsSold, attendees, revenue] = await Promise.all([

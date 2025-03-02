@@ -1,54 +1,19 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const {
-  NotFoundError,
-  BadRequestError,
-  ForbiddenError,
-} = require("../utils/errors");
+const { BadRequestError } = require("../utils/errors");
 
 const getVirtualEventLink = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
-
-  // Check if event exists and is virtual
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
+  const event = req.event;
 
   if (!event.isVirtual) {
     throw new BadRequestError("This is not a virtual event");
-  }
-
-  // Check if user has a valid ticket
-  const hasValidTicket = await prisma.ticket.findFirst({
-    where: {
-      eventId,
-      userId: req.user.id,
-      status: "VALID",
-    },
-  });
-
-  if (!hasValidTicket) {
-    throw new ForbiddenError("No valid ticket found for this event");
   }
 
   res.json({ virtualLink: event.virtualLink });
 });
 
 const recordVirtualAttendance = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
-
-  // Check if event exists and is virtual
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
+  const event = req.event;
 
   if (!event.isVirtual) {
     throw new BadRequestError("This is not a virtual event");
@@ -64,7 +29,7 @@ const recordVirtualAttendance = asyncHandler(async (req, res) => {
   const attendance = await prisma.eventAttendee.upsert({
     where: {
       eventId_userId: {
-        eventId,
+        eventId: event.id,
         userId: req.user.id,
       },
     },
@@ -73,7 +38,7 @@ const recordVirtualAttendance = asyncHandler(async (req, res) => {
       attendedAt: now,
     },
     create: {
-      eventId,
+      eventId: event.id,
       userId: req.user.id,
       attended: true,
       attendedAt: now,

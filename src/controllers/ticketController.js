@@ -138,11 +138,7 @@ const purchaseTicket = asyncHandler(async (req, res) => {
 });
 
 const verifyPayment = asyncHandler(async (req, res) => {
-  const { reference } = req.query;
-
-  if (!reference) {
-    throw new BadRequestError("Payment reference is required");
-  }
+  const reference = req.paymentReference;
 
   try {
     // First verify the transaction exists

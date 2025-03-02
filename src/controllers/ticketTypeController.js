@@ -1,10 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const {
-  NotFoundError,
-  ForbiddenError,
-  BadRequestError,
-} = require("../utils/errors");
+const { BadRequestError } = require("../utils/errors");
 
 const getTicketTypes = asyncHandler(async (req, res) => {
   const ticketTypes = await prisma.ticketType.findMany({
@@ -17,17 +13,7 @@ const getTicketTypes = asyncHandler(async (req, res) => {
 });
 
 const createTicketType = asyncHandler(async (req, res) => {
-  const event = await prisma.event.findUnique({
-    where: { id: req.params.id },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new ForbiddenError("Not authorized to create ticket type");
-  }
+  const event = req.event;
 
   // Ensure sale dates are within event dates
   const saleEndDate = new Date(req.body.saleEndDate);
@@ -48,25 +34,11 @@ const createTicketType = asyncHandler(async (req, res) => {
 });
 
 const updateTicketType = asyncHandler(async (req, res) => {
-  const ticketType = await prisma.ticketType.findUnique({
-    where: { id: req.params.typeId },
-    include: { event: true },
-  });
-
-  if (!ticketType) {
-    throw new NotFoundError("Ticket type not found");
-  }
-
-  if (
-    ticketType.event.organizerId !== req.user.id &&
-    req.user.role !== "ADMIN"
-  ) {
-    throw new ForbiddenError("Not authorized to update ticket type");
-  }
+  const event = req.event;
 
   // Ensure sale dates are within event dates
   const saleEndDate = new Date(req.body.saleEndDate);
-  const eventStartDate = new Date(ticketType.event.startDate);
+  const eventStartDate = new Date(event.startDate);
 
   if (saleEndDate > eventStartDate) {
     throw new BadRequestError("Ticket sales must end before event starts");
@@ -81,22 +53,6 @@ const updateTicketType = asyncHandler(async (req, res) => {
 });
 
 const deleteTicketType = asyncHandler(async (req, res) => {
-  const ticketType = await prisma.ticketType.findUnique({
-    where: { id: req.params.typeId },
-    include: { event: true },
-  });
-
-  if (!ticketType) {
-    throw new NotFoundError("Ticket type not found");
-  }
-
-  if (
-    ticketType.event.organizerId !== req.user.id &&
-    req.user.role !== "ADMIN"
-  ) {
-    throw new ForbiddenError("Not authorized to delete ticket type");
-  }
-
   // Check if there are any tickets sold
   const soldTickets = await prisma.ticket.count({
     where: { ticketTypeId: req.params.typeId },
@@ -116,7 +72,6 @@ const deleteTicketType = asyncHandler(async (req, res) => {
 module.exports = {
   getTicketTypes,
   createTicketType,
-
   updateTicketType,
   deleteTicketType,
 };

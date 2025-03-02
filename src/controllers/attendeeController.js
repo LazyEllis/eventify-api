@@ -1,26 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
 const sendgrid = require("@sendgrid/mail");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 const getEventAttendees = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
-
-  // Check if event exists and user has permission
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { organizer: true },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new ForbiddenError("Not authorized to view attendees for this event");
-  }
+  const eventId = req.event.id; // Use event from middleware
 
   // Get attendees with pagination
   const attendees = await prisma.eventAttendee.findMany({
@@ -41,24 +26,8 @@ const getEventAttendees = asyncHandler(async (req, res) => {
 });
 
 const inviteAttendees = asyncHandler(async (req, res) => {
-  const eventId = req.params.id;
+  const event = req.event;
   const { emails, message } = req.body;
-
-  // Check if event exists and user has permission
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      organizer: true,
-    },
-  });
-
-  if (!event) {
-    throw new NotFoundError("Event not found");
-  }
-
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
-    throw new ForbiddenError("Not authorized");
-  }
 
   // Format date for email template
   const eventDate = new Date(event.startDate).toLocaleString("en-US", {
@@ -78,11 +47,14 @@ const inviteAttendees = asyncHandler(async (req, res) => {
       await prisma.eventInvitation.create({
         data: {
           email,
-          eventId,
+          eventId: event.id,
           status: "PENDING",
           message,
         },
       });
+
+      console.log(event);
+      console.log(req.user);
 
       // Send email with all template variables
       await sendgrid.send({
@@ -97,7 +69,7 @@ const inviteAttendees = asyncHandler(async (req, res) => {
           eventLocation: event.location || "",
           eventDescription: event.description,
           message: message || "",
-          inviteLink: `${process.env.FRONTEND_URL}/events/${eventId}`,
+          inviteLink: `${process.env.FRONTEND_URL}/events/${event.id}`,
         },
       });
 
