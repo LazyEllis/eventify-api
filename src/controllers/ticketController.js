@@ -269,9 +269,97 @@ const getTicketDetails = asyncHandler(async (req, res) => {
   res.json(ticket);
 });
 
+// ...existing code...
+
+const validateTicket = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+
+  // Find the ticket
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      event: true,
+      ticketType: true,
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!ticket) {
+    throw new NotFoundError("Ticket not found");
+  }
+
+  // Check if the ticket is valid
+  if (ticket.status !== "VALID") {
+    return res.status(400).json({
+      success: false,
+      message: `Ticket is ${ticket.status.toLowerCase()}`,
+      ticket,
+    });
+  }
+
+  // Check if the event is active
+  const now = new Date();
+  if (now < ticket.event.startDate || now > ticket.event.endDate) {
+    return res.status(400).json({
+      success: false,
+      message: "Event is not currently active",
+      ticket,
+    });
+  }
+
+  // Mark ticket as used and record attendance
+  const updatedTicket = await prisma.$transaction(async (prisma) => {
+    // Update ticket status
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: "USED" },
+    });
+
+    // Record attendance (regardless of whether the person is a registered user or not)
+    await prisma.eventAttendee.upsert({
+      where: {
+        eventId_userId: {
+          eventId: ticket.eventId,
+          userId: ticket.userId,
+        },
+      },
+      update: {
+        attended: true,
+        attendedAt: now,
+      },
+      create: {
+        eventId: ticket.eventId,
+        userId: ticket.userId,
+        attended: true,
+        attendedAt: now,
+      },
+    });
+
+    return updated;
+  });
+
+  res.json({
+    success: true,
+    message: "Ticket validated successfully",
+    ticket: {
+      ...updatedTicket,
+      event: ticket.event,
+      ticketType: ticket.ticketType,
+      user: ticket.user,
+    },
+  });
+});
+
 module.exports = {
   purchaseTicket,
   verifyPayment,
   getUserTickets,
   getTicketDetails,
+  validateTicket,
 };

@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getEventAttendees,
   inviteAttendees,
+  recordManualAttendance,
   getAttendeeConnections,
 } = require("../controllers/attendeeController");
 const { protect } = require("../middleware/auth");
@@ -23,6 +24,13 @@ router.post(
   validateEventOwnership,
   validateInvite,
   inviteAttendees,
+);
+
+router.post(
+  "/events/:id/record-attendance",
+  protect,
+  validateEventOwnership,
+  recordManualAttendance,
 );
 
 router.get("/attendees/connections", protect, getAttendeeConnections);
