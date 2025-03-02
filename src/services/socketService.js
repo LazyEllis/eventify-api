@@ -47,6 +47,17 @@ const initializeSocket = (server) => {
       socket.leave(`event-${eventId}`);
     });
 
+    // Handle typing events
+    socket.on("typing", ({ eventId, isTyping }) => {
+      // Broadcast to all other clients in the same room that this user is typing
+      socket.to(`event-${eventId}`).emit("typing-update", {
+        userId: socket.user.id,
+        isTyping: isTyping,
+        firstName: socket.user.firstName,
+        lastName: socket.user.lastName,
+      });
+    });
+
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.user.id}`);
     });

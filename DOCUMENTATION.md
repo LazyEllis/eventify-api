@@ -11,7 +11,7 @@ Welcome to the Eventify API documentation. This API allows you to manage events,
 5. [Messages](#messages)
 6. [Analytics](#analytics)
 7. [Attendees](#attendees)
-8. [Virtual Events](#)
+8. [Virtual Events](#virtual-events)
 
 ## Authentication
 
@@ -838,7 +838,33 @@ socket.on("new-message", (message) => {
 });
 ```
 
-4. Leave an event room when done:
+4. Send typing indicators when a user starts or stops typing:
+
+```javascript
+// When user starts typing
+socket.emit("typing", { eventId: "event-id", isTyping: true });
+
+// When user stops typing
+socket.emit("typing", { eventId: "event-id", isTyping: false });
+```
+
+5. Listen for typing updates from other users:
+
+```javascript
+socket.on("typing-update", (typingData) => {
+  // typingData contains:
+  // - userId: the ID of the user who is typing
+  // - isTyping: boolean indicating if the user is typing
+  // - firstName: first name of the user
+  // - lastName: last name of the user
+
+  console.log(
+    `${typingData.firstName} ${typingData.lastName} is ${typingData.isTyping ? "typing..." : "stopped typing"}`,
+  );
+});
+```
+
+6. Leave an event room when done:
 
 ```javascript
 socket.emit("leave-event", "event-id");
@@ -868,13 +894,15 @@ socket.emit("leave-event", "event-id");
 
 ### WebSocket Events
 
-| Event         | Description                                           |
-| ------------- | ----------------------------------------------------- |
-| `connect`     | Fired when socket connection is established           |
-| `disconnect`  | Fired when socket connection is closed                |
-| `join-event`  | Join an event room to receive messages                |
-| `leave-event` | Leave an event room                                   |
-| `new-message` | Received when a new message is sent to the event room |
+| Event           | Description                                           |
+| --------------- | ----------------------------------------------------- |
+| `connect`       | Fired when socket connection is established           |
+| `disconnect`    | Fired when socket connection is closed                |
+| `join-event`    | Join an event room to receive messages                |
+| `leave-event`   | Leave an event room                                   |
+| `new-message`   | Received when a new message is sent to the event room |
+| `typing`        | Emit when a user starts/stops typing                  |
+| `typing-update` | Received when another user starts/stops typing        |
 
 ### Error Handling
 
