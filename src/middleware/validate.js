@@ -31,7 +31,6 @@ const validateEvent = validate([
   body("endDate").isISO8601().toDate(),
   body("capacity").isInt({ min: 1 }),
   body("category").notEmpty(),
-  body("isVirtual").isBoolean().optional(),
   body("virtualLink").isURL().optional(),
   body("location").optional(),
 ]);

@@ -10,7 +10,6 @@ Welcome to the Eventify API documentation. This guide provides comprehensive inf
 - [Ticket Types](#ticket-types)
 - [Tickets](#tickets)
 - [Messaging](#messaging)
-- [Virtual Events](#virtual-events)
 - [Attendees](#attendees)
 - [Analytics](#analytics)
 - [Real-time Communication](#real-time-communication)
@@ -99,8 +98,7 @@ Authorization: Bearer your_jwt_token
   "id": "user_123",
   "email": "user@example.com",
   "firstName": "John",
-  "lastName": "Doe",
-  "role": "USER"
+  "lastName": "Doe"
 }
 ```
 
@@ -128,8 +126,7 @@ Content-Type: application/json
   "id": "user_123",
   "email": "user@example.com",
   "firstName": "John",
-  "lastName": "Smith",
-  "role": "USER"
+  "lastName": "Smith"
 }
 ```
 
@@ -154,7 +151,6 @@ Content-Type: application/json
   "capacity": 500,
   "category": "Technology",
   "location": "Convention Center, New York",
-  "isVirtual": false
 }
 ```
 
@@ -170,7 +166,6 @@ Content-Type: application/json
   "capacity": 500,
   "category": "Technology",
   "location": "Convention Center, New York",
-  "isVirtual": false,
   "status": "DRAFT",
   "organizerId": "user_123",
   "createdAt": "2025-03-05T10:30:00Z",
@@ -202,7 +197,6 @@ Authorization: Bearer your_jwt_token
     "capacity": 500,
     "category": "Technology",
     "location": "Convention Center, New York",
-    "isVirtual": false,
     "status": "PUBLISHED",
     "organizer": {
       "id": "user_123",
@@ -245,7 +239,6 @@ Authorization: Bearer your_jwt_token
     "capacity": 500,
     "category": "Technology",
     "location": "Convention Center, New York",
-    "isVirtual": false,
     "status": "PUBLISHED",
     "organizer": {
       "id": "user_123",
@@ -291,7 +284,6 @@ Authorization: Bearer your_jwt_token
   "capacity": 500,
   "category": "Technology",
   "location": "Convention Center, New York",
-  "isVirtual": false,
   "status": "PUBLISHED",
   "organizer": {
     "id": "user_123",
@@ -315,7 +307,7 @@ Authorization: Bearer your_jwt_token
 
 ### Update an event
 
-Updates the details of an existing event. Only the event organizer or an admin can update an event.
+Updates the details of an existing event. Only the event organizer can update an event.
 
 **Request:**
 
@@ -342,7 +334,6 @@ Content-Type: application/json
   "capacity": 600,
   "category": "Technology",
   "location": "Convention Center, New York",
-  "isVirtual": false,
   "status": "PUBLISHED",
   "organizerId": "user_123",
   "createdAt": "2025-03-05T10:30:00Z",
@@ -352,7 +343,7 @@ Content-Type: application/json
 
 ### Delete an event
 
-Permanently deletes an event. Only the event organizer or an admin can delete an event.
+Permanently deletes an event. Only the event organizer can delete an event.
 
 **Request:**
 
@@ -367,7 +358,7 @@ Authorization: Bearer your_jwt_token
 
 ### Create a ticket type
 
-Creates a new ticket type for a specific event. Only the event organizer or an admin can create ticket types.
+Creates a new ticket type for a specific event. Only the event organizer can create ticket types.
 
 **Request:**
 
@@ -451,7 +442,7 @@ Authorization: Bearer your_jwt_token
 
 ### Update a ticket type
 
-Updates the details of a ticket type. Only the event organizer or an admin can update ticket types.
+Updates the details of a ticket type. Only the event organizer can update ticket types.
 
 **Request:**
 
@@ -597,8 +588,7 @@ Authorization: Bearer your_jwt_token
       "title": "Tech Conference 2025",
       "startDate": "2025-06-15T09:00:00Z",
       "endDate": "2025-06-17T18:00:00Z",
-      "location": "Convention Center, New York",
-      "isVirtual": false
+      "location": "Convention Center, New York"
     },
     "ticketType": {
       "name": "VIP Pass",
@@ -632,7 +622,6 @@ Authorization: Bearer your_jwt_token
     "startDate": "2025-06-15T09:00:00Z",
     "endDate": "2025-06-17T18:00:00Z",
     "location": "Convention Center, New York",
-    "isVirtual": false,
     "organizer": {
       "firstName": "John",
       "lastName": "Doe",
@@ -648,46 +637,6 @@ Authorization: Bearer your_jwt_token
     "firstName": "Jane",
     "lastName": "Smith",
     "email": "jane.smith@example.com"
-  }
-}
-```
-
-### Validate a ticket
-
-Validates a ticket for entry to an event and records attendance.
-
-**Request:**
-
-```http
-POST /tickets/:ticketId/validate
-Authorization: Bearer your_jwt_token
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "success": true,
-  "message": "Ticket validated successfully",
-  "ticket": {
-    "id": "ticket_789",
-    "status": "USED",
-    "purchaseDate": "2025-03-05T13:00:00Z",
-    "paymentReference": "ref_123456",
-    "event": {
-      "title": "Tech Conference 2025",
-      "startDate": "2025-06-15T09:00:00Z",
-      "endDate": "2025-06-17T18:00:00Z"
-    },
-    "ticketType": {
-      "name": "VIP Pass",
-      "price": 349.99
-    },
-    "user": {
-      "firstName": "Jane",
-      "lastName": "Smith",
-      "email": "jane.smith@example.com"
-    }
   }
 }
 ```
@@ -772,52 +721,6 @@ Authorization: Bearer your_jwt_token
 ]
 ```
 
-## Virtual Events
-
-### Get virtual event link
-
-Retrieves the virtual link for an online event.
-
-**Request:**
-
-```http
-GET /events/:id/virtual-link
-Authorization: Bearer your_jwt_token
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "virtualLink": "https://zoom.us/j/1234567890"
-}
-```
-
-### Record virtual attendance
-
-Records that a user has attended a virtual event.
-
-**Request:**
-
-```http
-POST /events/:id/virtual-attendance
-Authorization: Bearer your_jwt_token
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "id": "attendance_123",
-  "eventId": "event_123",
-  "userId": "user_123",
-  "attended": true,
-  "attendedAt": "2025-03-05T15:00:00Z",
-  "createdAt": "2025-03-05T15:00:00Z",
-  "updatedAt": "2025-03-05T15:00:00Z"
-}
-```
-
 ## Attendees
 
 ### List event attendees
@@ -891,47 +794,6 @@ Content-Type: application/json
       "status": "sent"
     }
   ]
-}
-```
-
-### Record manual attendance
-
-Manually records attendance for a ticket holder who is physically present at an event.
-
-**Request:**
-
-```http
-POST /events/:id/record-attendance
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "ticketId": "ticket_789"
-}
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "success": true,
-  "message": "Attendance recorded successfully",
-  "data": {
-    "ticket": {
-      "id": "ticket_789",
-      "status": "USED"
-    },
-    "attendee": {
-      "id": "attendance_125",
-      "attended": true,
-      "attendedAt": "2025-03-05T16:00:00Z"
-    },
-    "user": {
-      "firstName": "Jane",
-      "lastName": "Smith",
-      "email": "jane.smith@example.com"
-    }
-  }
 }
 ```
 
@@ -1170,7 +1032,6 @@ Common HTTP status codes:
   "email": "string",
   "firstName": "string",
   "lastName": "string",
-  "role": "USER|ADMIN",
   "createdAt": "datetime",
   "updatedAt": "datetime"
 }
@@ -1186,7 +1047,6 @@ Common HTTP status codes:
   "startDate": "datetime",
   "endDate": "datetime",
   "location": "string|null",
-  "isVirtual": "boolean",
   "virtualLink": "string|null",
   "capacity": "integer",
   "category": "string",
@@ -1243,17 +1103,3 @@ Common HTTP status codes:
   "updatedAt": "datetime"
 }
 ```
-
-## Rate Limits
-
-API requests are limited to 100 requests per minute per user. If you exceed this limit, you'll receive a 429 Too Many Requests response.
-
-## Webhook Events
-
-Eventify can notify your application about events that happen in your account. Set up webhooks to receive notifications about:
-
-- Ticket purchases
-- Event creation/updates
-- Attendee registrations
-
-Contact support for webhook setup assistance.

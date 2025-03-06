@@ -1,7 +1,5 @@
-// src/controllers/analyticsController.js
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const { ForbiddenError } = require("../utils/errors");
 
 const getEventAnalytics = asyncHandler(async (req, res) => {
   const eventId = req.event.id; // Use event from middleware
@@ -53,12 +51,6 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
 });
 
 const getSalesAnalytics = asyncHandler(async (req, res) => {
-  // Only allow admin to view all sales analytics
-  // Regular users can only view their own event analytics
-  if (req.user.role !== "ADMIN" && req.user.role !== "USER") {
-    throw new ForbiddenError("Not authorized to view sales analytics");
-  }
-
   const { startDate, endDate } = req.query;
   const start = startDate
     ? new Date(startDate)
@@ -73,11 +65,9 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
         gte: start,
         lte: end,
       },
-      ...(req.user.role !== "ADMIN" && {
-        event: {
-          organizerId: req.user.id,
-        },
-      }),
+      event: {
+        organizerId: req.user.id,
+      },
     },
     _count: {
       id: true,
@@ -106,12 +96,6 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
 });
 
 const getAttendanceAnalytics = asyncHandler(async (req, res) => {
-  // Allow both admin and regular users to view attendance analytics
-  // Regular users can only view their own event analytics
-  if (req.user.role !== "ADMIN" && req.user.role !== "USER") {
-    throw new ForbiddenError("Not authorized to view attendance analytics");
-  }
-
   const { startDate, endDate } = req.query;
   const start = startDate
     ? new Date(startDate)
@@ -124,9 +108,7 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
         gte: start,
         lte: end,
       },
-      ...(req.user.role !== "ADMIN" && {
-        organizerId: req.user.id,
-      }),
+      organizerId: req.user.id,
     },
     include: {
       _count: {

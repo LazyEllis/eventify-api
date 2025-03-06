@@ -12,7 +12,6 @@ const ticketTypeRouter = require("./routes/ticketTypeRouter");
 const messageRouter = require("./routes/messageRouter");
 const analyticsRouter = require("./routes/analyticsRouter");
 const attendeeRouter = require("./routes/attendeeRouter");
-const virtualEventRouter = require("./routes/virtualEventRouter");
 
 const app = express();
 const server = http.createServer(app);
@@ -30,7 +29,6 @@ app.use("/", ticketTypeRouter);
 app.use("/", messageRouter);
 app.use("/", analyticsRouter);
 app.use("/", attendeeRouter);
-app.use("/", virtualEventRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

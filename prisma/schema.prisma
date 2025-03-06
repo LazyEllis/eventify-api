@@ -14,7 +14,6 @@ model User {
   password  String
   firstName String
   lastName  String
-  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -33,7 +32,6 @@ model Event {
   startDate   DateTime
   endDate     DateTime
   location    String?
-  isVirtual   Boolean  @default(false)
   virtualLink String?
   capacity    Int
   category    String
@@ -132,11 +130,6 @@ model EventInvitation {
 }
 
 // Enums
-enum Role {
-  ADMIN
-  USER
-}
-
 enum EventStatus {
   DRAFT
   PUBLISHED

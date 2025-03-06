@@ -18,8 +18,8 @@ const validateEventOwnership = asyncHandler(async (req, res, next) => {
   // Store event in request for later use
   req.event = event;
 
-  // Check if user is authorized (organizer or admin)
-  if (event.organizerId !== req.user.id && req.user.role !== "ADMIN") {
+  // Check if user is authorized (organizer)
+  if (event.organizerId !== req.user.id) {
     throw new ForbiddenError("Not authorized to manage this event");
   }
 

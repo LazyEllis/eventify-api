@@ -10,7 +10,6 @@ const getProfile = asyncHandler(async (req, res) => {
       email: true,
       firstName: true,
       lastName: true,
-      role: true,
     },
   });
 

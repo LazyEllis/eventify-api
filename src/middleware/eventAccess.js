@@ -18,7 +18,7 @@ const validateEventAccess = asyncHandler(async (req, res, next) => {
   // Store event in request for later use
   req.event = event;
 
-  // Check if user has access (valid ticket or is organizer/admin)
+  // Check if user has access (valid ticket or is organizer)
   const hasAccess = await prisma.ticket.findFirst({
     where: {
       eventId,
@@ -27,11 +27,7 @@ const validateEventAccess = asyncHandler(async (req, res, next) => {
     },
   });
 
-  if (
-    !hasAccess &&
-    event.organizerId !== req.user.id &&
-    req.user.role !== "ADMIN"
-  ) {
+  if (!hasAccess && event.organizerId !== req.user.id) {
     throw new ForbiddenError("Not authorized to access this event");
   }
 
