@@ -9,43 +9,44 @@ generator client {
 
 // User model
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id               String   @id @default(uuid())
+  email            String   @unique
+  password         String
+  firstName        String
+  lastName         String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
   // Relations
-  events          Event[]        @relation("OrganizedEvents")
-  tickets         Ticket[]
-  messages        Message[]
-  attendingEvents EventAttendee[]
+  organizedEvents  Event[]        @relation("OrganizedEvents")
+  purchasedTickets Ticket[]       @relation("TicketPurchaser")
+  assignedTickets  TicketAssignee[] @relation("TicketAssignee")
+  messages         Message[]
 }
 
 // Event model
 model Event {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   description String
   startDate   DateTime
   endDate     DateTime
+  eventType   EventType    @default(PHYSICAL)
   location    String?
   virtualLink String?
   capacity    Int
   category    String
-  status      EventStatus @default(DRAFT)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  status      EventStatus  @default(DRAFT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
   // Relations
-  organizer      User           @relation("OrganizedEvents", fields: [organizerId], references: [id])
+  organizer      User             @relation("OrganizedEvents", fields: [organizerId], references: [id])
   organizerId    String
   tickets        Ticket[]
   ticketTypes    TicketType[]
-  messages       Message[]       @relation("EventMessages")
-  attendees      EventAttendee[]
+  TicketAssignee TicketAssignee[]
+  messages       Message[]        @relation("EventMessages")
   invitations    EventInvitation[]
 }
 
@@ -56,12 +57,12 @@ model TicketType {
   price         Float
   quantity      Int
   description   String?
-  maxPerUser    Int     @default(10)
+  maxPerUser    Int      @default(10)
   saleStartDate DateTime
   saleEndDate   DateTime
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
+  
   // Relations
   event         Event     @relation(fields: [eventId], references: [id])
   eventId       String
@@ -69,20 +70,43 @@ model TicketType {
 }
 
 model Ticket {
-  id          String   @id @default(uuid())
-  purchaseDate DateTime @default(now())
-  status      TicketStatus @default(VALID)
+  id               String       @id @default(uuid())
+  purchaseDate     DateTime     @default(now())
+  status           TicketStatus @default(VALID)
   paymentReference String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
   // Relations
-  user        User    @relation(fields: [userId], references: [id])
-  userId      String
-  event       Event   @relation(fields: [eventId], references: [id])
-  eventId     String
-  ticketType  TicketType @relation(fields: [ticketTypeId], references: [id])
-  ticketTypeId String
+  purchaser        User           @relation("TicketPurchaser", fields: [purchaserId], references: [id])
+  purchaserId      String
+  event            Event          @relation(fields: [eventId], references: [id])
+  eventId          String
+  ticketType       TicketType     @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId     String
+  assignee         TicketAssignee?
+}
+
+// New model for ticket assignees
+model TicketAssignee {
+  id          String    @id @default(uuid())
+  email       String    // Optional if linked to a user      
+  firstName   String    // Optional if linked to a user
+  lastName    String    // Optional if linked to a user
+  attendedAt  DateTime? 
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId    String    @unique
+  user        User?     @relation("TicketAssignee", fields: [userId], references: [id])
+  userId      String?
+  eventId     String               
+  event       Event     @relation(fields: [eventId], references: [id]) 
+  
+  @@unique([userId, eventId], name: "oneTicketPerUserPerEvent") // Add this constraint when userId is present
+  @@unique([email, eventId], name: "oneTicketPerEmailPerEvent") // Add this for non-registered attendees
 }
 
 // Message model for event communications
@@ -91,29 +115,12 @@ model Message {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   // Relations
   sender    User    @relation(fields: [senderId], references: [id])
   senderId  String
   event     Event   @relation("EventMessages", fields: [eventId], references: [id], onDelete: Cascade)
   eventId   String
-}
-
-// Junction table for many-to-many relationship between events and attendees
-model EventAttendee {
-  id           String   @id @default(uuid())
-  attended     Boolean  @default(false)
-  attendedAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  event        Event    @relation(fields: [eventId], references: [id])
-  eventId      String
-  user         User     @relation(fields: [userId], references: [id])
-  userId       String
-
-  @@unique([eventId, userId])
 }
 
 model EventInvitation {
@@ -123,13 +130,19 @@ model EventInvitation {
   message   String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-
+  
   // Relations
   event     Event     @relation(fields: [eventId], references: [id])
   eventId   String
 }
 
 // Enums
+enum EventType {
+  PHYSICAL
+  VIRTUAL
+  HYBRID
+}
+
 enum EventStatus {
   DRAFT
   PUBLISHED
