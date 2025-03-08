@@ -1,35 +1,62 @@
-# Eventify API Documentation
+# Eventify API Reference
 
-Welcome to the Eventify API documentation. This guide provides comprehensive information about available endpoints, request formats, and responses for integrating with our event management platform.
-
-## Contents
-
-- [Authentication](#authentication)
-- [Users](#users)
-- [Events](#events)
-- [Ticket Types](#ticket-types)
-- [Tickets](#tickets)
-- [Messaging](#messaging)
-- [Attendees](#attendees)
-- [Analytics](#analytics)
-- [Real-time Communication](#real-time-communication)
-- [Error Handling](#error-handling)
-- [Data Models](#data-models)
+This reference documentation provides details about the Eventify API, which allows you to programmatically manage events, tickets, users, messages, and more.
 
 ## Authentication
 
-All API endpoints require authentication using JSON Web Tokens (JWT) except for registration and login endpoints.
+The Eventify API uses token-based authentication. You need to include a Bearer token in the Authorization header for all authenticated requests.
 
-### Register a new user
+```
+Authorization: Bearer your_jwt_token
+```
 
-Creates a new user account in the system.
+Tokens are obtained through the login or register endpoints and are valid for 1 hour.
 
-**Request:**
+## Error Handling
 
-```http
+The API returns standard HTTP status codes to indicate success or failure:
+
+| Code | Description                            |
+| ---- | -------------------------------------- |
+| 200  | Request succeeded                      |
+| 201  | Resource created                       |
+| 400  | Bad request - invalid parameters       |
+| 401  | Unauthorized - authentication required |
+| 403  | Forbidden - insufficient permissions   |
+| 404  | Resource not found                     |
+| 409  | Conflict with existing resource        |
+| 500  | Server error                           |
+
+Error responses include a message explaining what went wrong:
+
+```json
+{
+  "message": "Error description"
+}
+```
+
+## Authentication
+
+### Register
+
+> Creates a new user account
+
+```
 POST /auth/register
-Content-Type: application/json
+```
 
+**Parameters**
+
+| Field       | Type   | Description                                 |
+| ----------- | ------ | ------------------------------------------- |
+| `email`     | string | _Required_. User's email address            |
+| `password`  | string | _Required_. Password (minimum 6 characters) |
+| `firstName` | string | _Required_. User's first name               |
+| `lastName`  | string | _Required_. User's last name                |
+
+**Example Request**
+
+```json
 {
   "email": "user@example.com",
   "password": "password123",
@@ -38,525 +65,633 @@ Content-Type: application/json
 }
 ```
 
-**Response:** `201 Created`
+**Example Response**
 
 ```json
 {
-  "id": "user_123",
+  "id": "user_1234",
   "email": "user@example.com",
   "firstName": "John",
   "lastName": "Doe",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJ..."
 }
 ```
 
 ### Login
 
-Authenticates a user and provides an access token.
+> Authenticates a user and returns a token
 
-**Request:**
-
-```http
+```
 POST /auth/login
-Content-Type: application/json
+```
 
+**Parameters**
+
+| Field      | Type   | Description                      |
+| ---------- | ------ | -------------------------------- |
+| `email`    | string | _Required_. User's email address |
+| `password` | string | _Required_. User's password      |
+
+**Example Request**
+
+```json
 {
   "email": "user@example.com",
   "password": "password123"
 }
 ```
 
-**Response:** `200 OK`
+**Example Response**
 
 ```json
 {
-  "id": "user_123",
+  "id": "user_1234",
   "email": "user@example.com",
   "firstName": "John",
   "lastName": "Doe",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJ..."
 }
 ```
 
 ## Users
 
-### Get user profile
+### Get User Profile
 
-Retrieves the profile information for the authenticated user.
+> Retrieves the authenticated user's profile
 
-**Request:**
-
-```http
+```
 GET /users/profile
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Example Response**
 
 ```json
 {
-  "id": "user_123",
+  "id": "user_1234",
   "email": "user@example.com",
   "firstName": "John",
   "lastName": "Doe"
 }
 ```
 
-### Update user profile
+### Update User Profile
 
-Updates the authenticated user's profile information.
+> Updates the authenticated user's profile
 
-**Request:**
-
-```http
+```
 PUT /users/profile
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "firstName": "John",
-  "lastName": "Smith"
-}
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Parameters**
+
+| Field       | Type   | Description                   |
+| ----------- | ------ | ----------------------------- |
+| `firstName` | string | _Optional_. User's first name |
+| `lastName`  | string | _Optional_. User's last name  |
+
+**Example Request**
 
 ```json
 {
-  "id": "user_123",
+  "firstName": "Johnny",
+  "lastName": "Doe"
+}
+```
+
+**Example Response**
+
+```json
+{
+  "id": "user_1234",
   "email": "user@example.com",
-  "firstName": "John",
-  "lastName": "Smith"
+  "firstName": "Johnny",
+  "lastName": "Doe"
 }
 ```
 
 ## Events
 
-### Create an event
+### Create Event
 
-Creates a new event with the authenticated user as the organizer.
+> Creates a new event
 
-**Request:**
-
-```http
+```
 POST /events
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "title": "Tech Conference 2025",
-  "description": "Annual tech conference for developers",
-  "startDate": "2025-06-15T09:00:00Z",
-  "endDate": "2025-06-17T18:00:00Z",
-  "capacity": 500,
-  "category": "Technology",
-  "location": "Convention Center, New York",
-}
 ```
 
-**Response:** `201 Created`
+**Authorization**: Bearer token required
+
+**Parameters**
+
+| Field         | Type    | Description                                                |
+| ------------- | ------- | ---------------------------------------------------------- |
+| `title`       | string  | _Required_. Event title                                    |
+| `description` | string  | _Required_. Event description                              |
+| `startDate`   | string  | _Required_. Event start date (ISO 8601)                    |
+| `endDate`     | string  | _Required_. Event end date (ISO 8601)                      |
+| `eventType`   | string  | _Required_. Event type: 'PHYSICAL', 'VIRTUAL', or 'HYBRID' |
+| `capacity`    | integer | _Required_. Maximum capacity                               |
+| `category`    | string  | _Required_. Event category                                 |
+| `location`    | string  | _Required for PHYSICAL/HYBRID_. Event location             |
+| `virtualLink` | string  | _Required for VIRTUAL/HYBRID_. Link to virtual event       |
+
+**Example Request**
 
 ```json
 {
-  "id": "event_123",
   "title": "Tech Conference 2025",
-  "description": "Annual tech conference for developers",
-  "startDate": "2025-06-15T09:00:00Z",
-  "endDate": "2025-06-17T18:00:00Z",
+  "description": "Annual tech conference featuring the latest innovations",
+  "startDate": "2025-05-15T09:00:00Z",
+  "endDate": "2025-05-17T18:00:00Z",
+  "eventType": "HYBRID",
   "capacity": 500,
   "category": "Technology",
-  "location": "Convention Center, New York",
-  "status": "DRAFT",
-  "organizerId": "user_123",
-  "createdAt": "2025-03-05T10:30:00Z",
-  "updatedAt": "2025-03-05T10:30:00Z"
+  "location": "Convention Center, City",
+  "virtualLink": "https://example.com/virtual-conference"
 }
 ```
 
-### List all events
+**Example Response**
 
-Retrieves a list of all published events.
-
-**Request:**
-
-```http
-GET /events
-Authorization: Bearer your_jwt_token
+```json
+{
+  "id": "evt_1234",
+  "title": "Tech Conference 2025",
+  "description": "Annual tech conference featuring the latest innovations",
+  "startDate": "2025-05-15T09:00:00Z",
+  "endDate": "2025-05-17T18:00:00Z",
+  "eventType": "HYBRID",
+  "capacity": 500,
+  "category": "Technology",
+  "location": "Convention Center, City",
+  "virtualLink": "https://example.com/virtual-conference",
+  "status": "DRAFT",
+  "createdAt": "2025-03-09T10:30:00Z",
+  "updatedAt": "2025-03-09T10:30:00Z",
+  "organizerId": "user_1234"
+}
 ```
 
-**Response:** `200 OK`
+### Get Events
+
+> Retrieves a list of all published events
+
+```
+GET /events
+```
+
+**Authorization**: Bearer token required
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "event_123",
+    "id": "evt_1234",
     "title": "Tech Conference 2025",
-    "description": "Annual tech conference for developers",
-    "startDate": "2025-06-15T09:00:00Z",
-    "endDate": "2025-06-17T18:00:00Z",
+    "description": "Annual tech conference featuring the latest innovations",
+    "startDate": "2025-05-15T09:00:00Z",
+    "endDate": "2025-05-17T18:00:00Z",
+    "eventType": "HYBRID",
     "capacity": 500,
     "category": "Technology",
-    "location": "Convention Center, New York",
+    "location": "Convention Center, City",
+    "virtualLink": "https://example.com/virtual-conference",
     "status": "PUBLISHED",
+    "createdAt": "2025-03-09T10:30:00Z",
+    "updatedAt": "2025-03-09T10:30:00Z",
     "organizer": {
-      "id": "user_123",
+      "id": "user_1234",
       "firstName": "John",
       "lastName": "Doe"
     },
     "ticketTypes": [
       {
-        "id": "ticket_type_456",
-        "name": "VIP Pass",
-        "price": 299.99,
-        "quantity": 50
+        "id": "tkt_1234",
+        "name": "General Admission",
+        "price": 150.0,
+        "quantity": 400,
+        "description": "Standard entry ticket"
       }
     ]
   }
 ]
 ```
 
-### List user's organized events
+### Get User's Events
 
-Retrieves a list of events organized by the authenticated user.
+> Retrieves events organized by the authenticated user
 
-**Request:**
-
-```http
+```
 GET /events/my-events
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "event_123",
+    "id": "evt_1234",
     "title": "Tech Conference 2025",
-    "description": "Annual tech conference for developers",
-    "startDate": "2025-06-15T09:00:00Z",
-    "endDate": "2025-06-17T18:00:00Z",
+    "description": "Annual tech conference featuring the latest innovations",
+    "startDate": "2025-05-15T09:00:00Z",
+    "endDate": "2025-05-17T18:00:00Z",
+    "eventType": "HYBRID",
     "capacity": 500,
     "category": "Technology",
-    "location": "Convention Center, New York",
+    "location": "Convention Center, City",
+    "virtualLink": "https://example.com/virtual-conference",
     "status": "PUBLISHED",
+    "createdAt": "2025-03-09T10:30:00Z",
+    "updatedAt": "2025-03-09T10:30:00Z",
     "organizer": {
-      "id": "user_123",
+      "id": "user_1234",
       "firstName": "John",
       "lastName": "Doe"
     },
     "_count": {
-      "tickets": 25,
-      "attendees": 10
+      "tickets": 150,
+      "TicketAssignee": 75
     },
     "ticketTypes": [
       {
-        "id": "ticket_type_456",
-        "name": "VIP Pass",
-        "price": 299.99,
-        "quantity": 50
+        "id": "tkt_1234",
+        "name": "General Admission",
+        "price": 150.0,
+        "quantity": 400,
+        "description": "Standard entry ticket"
       }
     ]
   }
 ]
 ```
 
-### Get single event details
+### Get Event
 
-Retrieves detailed information about a specific event.
+> Retrieves details of a specific event
 
-**Request:**
-
-```http
+```
 GET /events/:id
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Example Response**
 
 ```json
 {
-  "id": "event_123",
+  "id": "evt_1234",
   "title": "Tech Conference 2025",
-  "description": "Annual tech conference for developers",
-  "startDate": "2025-06-15T09:00:00Z",
-  "endDate": "2025-06-17T18:00:00Z",
+  "description": "Annual tech conference featuring the latest innovations",
+  "startDate": "2025-05-15T09:00:00Z",
+  "endDate": "2025-05-17T18:00:00Z",
+  "eventType": "HYBRID",
   "capacity": 500,
   "category": "Technology",
-  "location": "Convention Center, New York",
+  "location": "Convention Center, City",
+  "virtualLink": "https://example.com/virtual-conference",
   "status": "PUBLISHED",
+  "createdAt": "2025-03-09T10:30:00Z",
+  "updatedAt": "2025-03-09T10:30:00Z",
   "organizer": {
-    "id": "user_123",
+    "id": "user_1234",
     "firstName": "John",
     "lastName": "Doe"
   },
   "ticketTypes": [
     {
-      "id": "ticket_type_456",
-      "name": "VIP Pass",
-      "price": 299.99,
-      "quantity": 50,
-      "description": "VIP access to all conference areas",
-      "maxPerUser": 2,
-      "saleStartDate": "2025-01-01T00:00:00Z",
-      "saleEndDate": "2025-06-01T00:00:00Z"
+      "id": "tkt_1234",
+      "name": "General Admission",
+      "price": 150.0,
+      "quantity": 400,
+      "description": "Standard entry ticket"
     }
   ]
 }
 ```
 
-### Update an event
+### Update Event
 
-Updates the details of an existing event. Only the event organizer can update an event.
+> Updates an existing event
 
-**Request:**
-
-```http
+```
 PUT /events/:id
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
+```
 
+**Authorization**: Bearer token required (event organizer only)
+
+**Parameters**
+
+| Field         | Type    | Description                                                              |
+| ------------- | ------- | ------------------------------------------------------------------------ |
+| `title`       | string  | _Optional_. Event title                                                  |
+| `description` | string  | _Optional_. Event description                                            |
+| `startDate`   | string  | _Optional_. Event start date (ISO 8601)                                  |
+| `endDate`     | string  | _Optional_. Event end date (ISO 8601)                                    |
+| `eventType`   | string  | _Optional_. Event type: 'PHYSICAL', 'VIRTUAL', or 'HYBRID'               |
+| `capacity`    | integer | _Optional_. Maximum capacity                                             |
+| `category`    | string  | _Optional_. Event category                                               |
+| `location`    | string  | _Optional_. Event location (required for PHYSICAL/HYBRID)                |
+| `virtualLink` | string  | _Optional_. Link to virtual event (required for VIRTUAL/HYBRID)          |
+| `status`      | string  | _Optional_. Event status: 'DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED' |
+
+**Example Request**
+
+```json
 {
-  "title": "Updated Tech Conference 2025",
+  "title": "Tech Conference 2025 - Updated",
   "capacity": 600
 }
 ```
 
-**Response:** `200 OK`
+**Example Response**
 
 ```json
 {
-  "id": "event_123",
-  "title": "Updated Tech Conference 2025",
-  "description": "Annual tech conference for developers",
-  "startDate": "2025-06-15T09:00:00Z",
-  "endDate": "2025-06-17T18:00:00Z",
+  "id": "evt_1234",
+  "title": "Tech Conference 2025 - Updated",
+  "description": "Annual tech conference featuring the latest innovations",
+  "startDate": "2025-05-15T09:00:00Z",
+  "endDate": "2025-05-17T18:00:00Z",
+  "eventType": "HYBRID",
   "capacity": 600,
   "category": "Technology",
-  "location": "Convention Center, New York",
+  "location": "Convention Center, City",
+  "virtualLink": "https://example.com/virtual-conference",
   "status": "PUBLISHED",
-  "organizerId": "user_123",
-  "createdAt": "2025-03-05T10:30:00Z",
-  "updatedAt": "2025-03-05T11:45:00Z"
+  "createdAt": "2025-03-09T10:30:00Z",
+  "updatedAt": "2025-03-09T15:45:00Z",
+  "organizerId": "user_1234"
 }
 ```
 
-### Delete an event
+### Delete Event
 
-Permanently deletes an event. Only the event organizer can delete an event.
+> Deletes an event
 
-**Request:**
-
-```http
+```
 DELETE /events/:id
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `204 No Content`
+**Authorization**: Bearer token required (event organizer only)
+
+**Response**: HTTP 204 (No Content)
 
 ## Ticket Types
 
-### Create a ticket type
+### Create Ticket Type
 
-Creates a new ticket type for a specific event. Only the event organizer can create ticket types.
+> Creates a new ticket type for an event
 
-**Request:**
-
-```http
+```
 POST /events/:id/ticket-types
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "name": "VIP Pass",
-  "price": 299.99,
-  "quantity": 50,
-  "description": "VIP access to all conference areas",
-  "maxPerUser": 2,
-  "saleStartDate": "2025-01-01T00:00:00Z",
-  "saleEndDate": "2025-06-01T00:00:00Z"
-}
 ```
 
-**Response:** `201 Created`
+**Authorization**: Bearer token required (event organizer only)
+
+**Parameters**
+
+| Field           | Type    | Description                                        |
+| --------------- | ------- | -------------------------------------------------- |
+| `name`          | string  | _Required_. Ticket type name                       |
+| `price`         | number  | _Required_. Ticket price                           |
+| `quantity`      | integer | _Required_. Number of tickets available            |
+| `description`   | string  | _Optional_. Ticket description                     |
+| `maxPerUser`    | integer | _Optional_. Maximum tickets per user (default: 10) |
+| `saleStartDate` | string  | _Required_. Sale start date (ISO 8601)             |
+| `saleEndDate`   | string  | _Required_. Sale end date (ISO 8601)               |
+
+**Example Request**
 
 ```json
 {
-  "id": "ticket_type_456",
   "name": "VIP Pass",
-  "price": 299.99,
+  "price": 300.0,
   "quantity": 50,
-  "description": "VIP access to all conference areas",
+  "description": "VIP access including exclusive sessions",
   "maxPerUser": 2,
-  "saleStartDate": "2025-01-01T00:00:00Z",
-  "saleEndDate": "2025-06-01T00:00:00Z",
-  "eventId": "event_123",
-  "createdAt": "2025-03-05T12:00:00Z",
-  "updatedAt": "2025-03-05T12:00:00Z"
+  "saleStartDate": "2025-04-01T00:00:00Z",
+  "saleEndDate": "2025-05-14T23:59:59Z"
 }
 ```
 
-### List ticket types for an event
+**Example Response**
 
-Retrieves all ticket types available for a specific event.
-
-**Request:**
-
-```http
-GET /events/:id/ticket-types
-Authorization: Bearer your_jwt_token
+```json
+{
+  "id": "tt_1234",
+  "name": "VIP Pass",
+  "price": 300.0,
+  "quantity": 50,
+  "description": "VIP access including exclusive sessions",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-04-01T00:00:00Z",
+  "saleEndDate": "2025-05-14T23:59:59Z",
+  "createdAt": "2025-03-09T16:20:00Z",
+  "updatedAt": "2025-03-09T16:20:00Z",
+  "eventId": "evt_1234"
+}
 ```
 
-**Response:** `200 OK`
+### Get Ticket Types
+
+> Retrieves all ticket types for an event
+
+```
+GET /events/:id/ticket-types
+```
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "ticket_type_456",
+    "id": "tt_1234",
     "name": "VIP Pass",
-    "price": 299.99,
+    "price": 300.0,
     "quantity": 50,
-    "description": "VIP access to all conference areas",
+    "description": "VIP access including exclusive sessions",
     "maxPerUser": 2,
-    "saleStartDate": "2025-01-01T00:00:00Z",
-    "saleEndDate": "2025-06-01T00:00:00Z",
-    "eventId": "event_123",
-    "createdAt": "2025-03-05T12:00:00Z",
-    "updatedAt": "2025-03-05T12:00:00Z"
+    "saleStartDate": "2025-04-01T00:00:00Z",
+    "saleEndDate": "2025-05-14T23:59:59Z",
+    "createdAt": "2025-03-09T16:20:00Z",
+    "updatedAt": "2025-03-09T16:20:00Z",
+    "eventId": "evt_1234"
   },
   {
-    "id": "ticket_type_457",
-    "name": "Standard Pass",
-    "price": 99.99,
-    "quantity": 200,
-    "description": "Standard conference access",
-    "maxPerUser": 5,
-    "saleStartDate": "2025-01-01T00:00:00Z",
-    "saleEndDate": "2025-06-01T00:00:00Z",
-    "eventId": "event_123",
-    "createdAt": "2025-03-05T12:05:00Z",
-    "updatedAt": "2025-03-05T12:05:00Z"
+    "id": "tt_5678",
+    "name": "General Admission",
+    "price": 150.0,
+    "quantity": 400,
+    "description": "Standard entry ticket",
+    "maxPerUser": 10,
+    "saleStartDate": "2025-03-15T00:00:00Z",
+    "saleEndDate": "2025-05-14T23:59:59Z",
+    "createdAt": "2025-03-09T16:20:00Z",
+    "updatedAt": "2025-03-09T16:20:00Z",
+    "eventId": "evt_1234"
   }
 ]
 ```
 
-### Update a ticket type
+### Update Ticket Type
 
-Updates the details of a ticket type. Only the event organizer can update ticket types.
+> Updates an existing ticket type
 
-**Request:**
-
-```http
+```
 PUT /events/:id/ticket-types/:typeId
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "price": 349.99,
-  "quantity": 40
-}
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required (event organizer only)
+
+**Parameters**
+
+| Field           | Type    | Description                             |
+| --------------- | ------- | --------------------------------------- |
+| `name`          | string  | _Optional_. Ticket type name            |
+| `price`         | number  | _Optional_. Ticket price                |
+| `quantity`      | integer | _Optional_. Number of tickets available |
+| `description`   | string  | _Optional_. Ticket description          |
+| `maxPerUser`    | integer | _Optional_. Maximum tickets per user    |
+| `saleStartDate` | string  | _Optional_. Sale start date (ISO 8601)  |
+| `saleEndDate`   | string  | _Optional_. Sale end date (ISO 8601)    |
+
+**Example Request**
 
 ```json
 {
-  "id": "ticket_type_456",
-  "name": "VIP Pass",
-  "price": 349.99,
-  "quantity": 40,
-  "description": "VIP access to all conference areas",
-  "maxPerUser": 2,
-  "saleStartDate": "2025-01-01T00:00:00Z",
-  "saleEndDate": "2025-06-01T00:00:00Z",
-  "eventId": "event_123",
-  "createdAt": "2025-03-05T12:00:00Z",
-  "updatedAt": "2025-03-05T12:30:00Z"
+  "price": 250.0,
+  "quantity": 75
 }
 ```
 
-### Delete a ticket type
+**Example Response**
 
-Deletes a ticket type. Only possible if no tickets of this type have been sold.
-
-**Request:**
-
-```http
-DELETE /events/:id/ticket-types/:typeId
-Authorization: Bearer your_jwt_token
+```json
+{
+  "id": "tt_1234",
+  "name": "VIP Pass",
+  "price": 250.0,
+  "quantity": 75,
+  "description": "VIP access including exclusive sessions",
+  "maxPerUser": 2,
+  "saleStartDate": "2025-04-01T00:00:00Z",
+  "saleEndDate": "2025-05-14T23:59:59Z",
+  "createdAt": "2025-03-09T16:20:00Z",
+  "updatedAt": "2025-03-09T16:45:00Z",
+  "eventId": "evt_1234"
+}
 ```
 
-**Response:** `204 No Content`
+### Delete Ticket Type
+
+> Deletes a ticket type (only if no tickets sold)
+
+```
+DELETE /events/:id/ticket-types/:typeId
+```
+
+**Authorization**: Bearer token required (event organizer only)
+
+**Response**: HTTP 204 (No Content)
 
 ## Tickets
 
-### Purchase tickets
+### Purchase Ticket
 
-Initiates the ticket purchase process and creates a payment transaction with Paystack.
+> Initiates the purchase of tickets
 
-**Request:**
-
-```http
+```
 POST /tickets/purchase
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
+```
 
+**Authorization**: Bearer token required
+
+**Parameters**
+
+| Field                    | Type    | Description                           |
+| ------------------------ | ------- | ------------------------------------- |
+| `eventId`                | string  | _Required_. ID of the event           |
+| `tickets`                | array   | _Required_. Array of ticket purchases |
+| `tickets[].ticketTypeId` | string  | _Required_. ID of the ticket type     |
+| `tickets[].quantity`     | integer | _Required_. Quantity to purchase      |
+
+**Example Request**
+
+```json
 {
-  "eventId": "event_123",
+  "eventId": "evt_1234",
   "tickets": [
     {
-      "ticketTypeId": "ticket_type_456",
+      "ticketTypeId": "tt_1234",
       "quantity": 2
+    },
+    {
+      "ticketTypeId": "tt_5678",
+      "quantity": 1
     }
   ]
 }
 ```
 
-**Response:** `201 Created`
+**Example Response**
 
 ```json
 {
   "tickets": [
     {
-      "id": "ticket_789",
-      "userId": "user_123",
-      "eventId": "event_123",
-      "ticketTypeId": "ticket_type_456",
+      "id": "tck_1234",
       "status": "PENDING",
-      "paymentReference": "ref_123456",
-      "purchaseDate": "2025-03-05T13:00:00Z",
-      "createdAt": "2025-03-05T13:00:00Z",
-      "updatedAt": "2025-03-05T13:00:00Z"
+      "eventId": "evt_1234",
+      "ticketTypeId": "tt_1234",
+      "purchaserId": "user_1234",
+      "paymentReference": "ref_12345"
     },
     {
-      "id": "ticket_790",
-      "userId": "user_123",
-      "eventId": "event_123",
-      "ticketTypeId": "ticket_type_456",
+      "id": "tck_1235",
       "status": "PENDING",
-      "paymentReference": "ref_123456",
-      "purchaseDate": "2025-03-05T13:00:00Z",
-      "createdAt": "2025-03-05T13:00:00Z",
-      "updatedAt": "2025-03-05T13:00:00Z"
+      "eventId": "evt_1234",
+      "ticketTypeId": "tt_1234",
+      "purchaserId": "user_1234",
+      "paymentReference": "ref_12345"
+    },
+    {
+      "id": "tck_1236",
+      "status": "PENDING",
+      "eventId": "evt_1234",
+      "ticketTypeId": "tt_5678",
+      "purchaserId": "user_1234",
+      "paymentReference": "ref_12345"
     }
   ],
-  "authorizationUrl": "https://checkout.paystack.com/ref_123456",
-  "reference": "ref_123456"
+  "authorizationUrl": "https://checkout.paystack.com/ref_12345",
+  "reference": "ref_12345"
 }
 ```
 
-### Verify ticket payment
+### Verify Payment
 
-Verifies a payment transaction and updates ticket status accordingly.
+> Verifies a payment and activates tickets
 
-**Request:**
-
-```http
-GET /tickets/verify?reference=ref_123456
-Authorization: Bearer your_jwt_token
+```
+GET /tickets/verify?reference=ref_12345
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Query Parameters**
+
+| Field       | Type   | Description                                 |
+| ----------- | ------ | ------------------------------------------- |
+| `reference` | string | _Required_. Payment reference from Paystack |
+
+**Example Response**
 
 ```json
 {
@@ -564,156 +699,235 @@ Authorization: Bearer your_jwt_token
 }
 ```
 
-### Get user tickets
+### Get User Tickets
 
-Retrieves all tickets purchased by the authenticated user.
+> Retrieves all tickets purchased by the authenticated user
 
-**Request:**
-
-```http
+```
 GET /tickets/user
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "ticket_789",
+    "id": "tck_1234",
+    "purchaseDate": "2025-03-09T17:30:00Z",
     "status": "VALID",
-    "purchaseDate": "2025-03-05T13:00:00Z",
-    "paymentReference": "ref_123456",
     "event": {
       "title": "Tech Conference 2025",
-      "startDate": "2025-06-15T09:00:00Z",
-      "endDate": "2025-06-17T18:00:00Z",
-      "location": "Convention Center, New York"
+      "startDate": "2025-05-15T09:00:00Z",
+      "endDate": "2025-05-17T18:00:00Z",
+      "location": "Convention Center, City",
+      "eventType": "HYBRID",
+      "virtualLink": "https://example.com/virtual-conference"
     },
     "ticketType": {
       "name": "VIP Pass",
-      "price": 349.99
+      "price": 250.0
+    },
+    "assignee": {
+      "id": "asn_1234",
+      "email": "attendee@example.com",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "attendedAt": null
     }
   }
 ]
 ```
 
-### Get ticket details
+### Get Ticket Details
 
-Retrieves detailed information about a specific ticket.
+> Retrieves details of a specific ticket
 
-**Request:**
-
-```http
+```
 GET /tickets/:id
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required (ticket purchaser only)
+
+**Example Response**
 
 ```json
 {
-  "id": "ticket_789",
+  "id": "tck_1234",
+  "purchaseDate": "2025-03-09T17:30:00Z",
   "status": "VALID",
-  "purchaseDate": "2025-03-05T13:00:00Z",
-  "paymentReference": "ref_123456",
+  "paymentReference": "ref_12345",
   "event": {
+    "id": "evt_1234",
     "title": "Tech Conference 2025",
-    "startDate": "2025-06-15T09:00:00Z",
-    "endDate": "2025-06-17T18:00:00Z",
-    "location": "Convention Center, New York",
+    "startDate": "2025-05-15T09:00:00Z",
+    "endDate": "2025-05-17T18:00:00Z",
+    "location": "Convention Center, City",
     "organizer": {
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john.doe@example.com"
+      "email": "john@example.com"
     }
   },
   "ticketType": {
     "name": "VIP Pass",
-    "price": 349.99,
-    "description": "VIP access to all conference areas"
+    "price": 250.0
   },
   "user": {
+    "firstName": "User",
+    "lastName": "Example",
+    "email": "user@example.com"
+  },
+  "assignee": {
+    "id": "asn_1234",
+    "email": "attendee@example.com",
     "firstName": "Jane",
     "lastName": "Smith",
-    "email": "jane.smith@example.com"
+    "attendedAt": null,
+    "user": null
   }
 }
 ```
 
-## Messaging
+### Assign Ticket
 
-### Send a message
+> Assigns a ticket to a user or email
 
-Sends a message to all attendees of an event. The message is also broadcast in real-time via Socket.IO.
-
-**Request:**
-
-```http
-POST /events/:id/messages
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
-{
-  "content": "Important announcement for all attendees!"
-}
+```
+POST /tickets/:ticketId/assign
 ```
 
-**Response:** `201 Created`
+**Authorization**: Bearer token required (ticket purchaser only)
+
+**Parameters**
+
+| Field       | Type   | Description                                           |
+| ----------- | ------ | ----------------------------------------------------- |
+| `email`     | string | _Optional_. Email for non-registered attendee         |
+| `firstName` | string | _Optional_. First name (required with email)          |
+| `lastName`  | string | _Optional_. Last name (required with email)           |
+| `userId`    | string | _Optional_. ID of registered user to assign ticket to |
+
+**Example Request**
 
 ```json
 {
-  "id": "message_123",
-  "content": "Important announcement for all attendees!",
-  "senderId": "user_123",
-  "eventId": "event_123",
-  "createdAt": "2025-03-05T14:00:00Z",
-  "updatedAt": "2025-03-05T14:00:00Z",
+  "email": "attendee@example.com",
+  "firstName": "Jane",
+  "lastName": "Smith"
+}
+```
+
+**Example Response**
+
+```json
+{
+  "id": "asn_1234",
+  "email": "attendee@example.com",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "attendedAt": null,
+  "ticketId": "tck_1234",
+  "userId": null,
+  "eventId": "evt_1234",
+  "createdAt": "2025-03-09T18:15:00Z",
+  "updatedAt": "2025-03-09T18:15:00Z"
+}
+```
+
+### Remove Ticket Assignment
+
+> Removes a ticket assignment
+
+```
+DELETE /tickets/:ticketId/assign
+```
+
+**Authorization**: Bearer token required (ticket purchaser only)
+
+**Response**: HTTP 204 (No Content)
+
+## Messages
+
+### Send Message
+
+> Sends a message in an event
+
+```
+POST /events/:id/messages
+```
+
+**Authorization**: Bearer token required (event access required)
+
+**Parameters**
+
+| Field     | Type   | Description                                       |
+| --------- | ------ | ------------------------------------------------- |
+| `content` | string | _Required_. Message content (max 1000 characters) |
+
+**Example Request**
+
+```json
+{
+  "content": "Is there a schedule for the workshop sessions?"
+}
+```
+
+**Example Response**
+
+```json
+{
+  "id": "msg_1234",
+  "content": "Is there a schedule for the workshop sessions?",
+  "createdAt": "2025-03-09T19:20:00Z",
+  "updatedAt": "2025-03-09T19:20:00Z",
+  "senderId": "user_1234",
+  "eventId": "evt_1234",
   "sender": {
-    "id": "user_123",
+    "id": "user_1234",
     "firstName": "John",
     "lastName": "Doe"
   }
 }
 ```
 
-### List event messages
+### Get Event Messages
 
-Retrieves all messages for a specific event.
+> Retrieves all messages for an event
 
-**Request:**
-
-```http
+```
 GET /events/:id/messages
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required (event access required)
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "message_123",
-    "content": "Important announcement for all attendees!",
-    "senderId": "user_123",
-    "eventId": "event_123",
-    "createdAt": "2025-03-05T14:00:00Z",
-    "updatedAt": "2025-03-05T14:00:00Z",
+    "id": "msg_1234",
+    "content": "Is there a schedule for the workshop sessions?",
+    "createdAt": "2025-03-09T19:20:00Z",
+    "updatedAt": "2025-03-09T19:20:00Z",
+    "senderId": "user_1234",
+    "eventId": "evt_1234",
     "sender": {
-      "id": "user_123",
+      "id": "user_1234",
       "firstName": "John",
       "lastName": "Doe"
     }
   },
   {
-    "id": "message_124",
-    "content": "The keynote will start in 15 minutes.",
-    "senderId": "user_456",
-    "eventId": "event_123",
-    "createdAt": "2025-03-05T14:15:00Z",
-    "updatedAt": "2025-03-05T14:15:00Z",
+    "id": "msg_1235",
+    "content": "Workshop schedules will be posted tomorrow.",
+    "createdAt": "2025-03-09T19:25:00Z",
+    "updatedAt": "2025-03-09T19:25:00Z",
+    "senderId": "user_5678",
+    "eventId": "evt_1234",
     "sender": {
-      "id": "user_456",
+      "id": "user_5678",
       "firstName": "Jane",
       "lastName": "Smith"
     }
@@ -723,383 +937,338 @@ Authorization: Bearer your_jwt_token
 
 ## Attendees
 
-### List event attendees
+### Get Event Attendees
 
-Retrieves a list of all attendees for a specific event.
+> Retrieves all attendees for an event
 
-**Request:**
-
-```http
+```
 GET /events/:id/attendees
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required (event organizer only)
+
+**Example Response**
 
 ```json
 [
   {
-    "id": "attendance_123",
-    "attended": true,
-    "attendedAt": "2025-03-05T15:00:00Z",
+    "id": "asn_1234",
+    "email": "attendee@example.com",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "attendedAt": "2025-05-15T10:30:00Z",
+    "ticketId": "tck_1234",
+    "userId": "user_5678",
+    "eventId": "evt_1234",
+    "ticket": {
+      "ticketType": {
+        "name": "VIP Pass"
+      }
+    },
     "user": {
-      "id": "user_456",
+      "id": "user_5678",
+      "email": "attendee@example.com",
       "firstName": "Jane",
-      "lastName": "Smith",
-      "email": "jane.smith@example.com"
-    }
-  },
-  {
-    "id": "attendance_124",
-    "attended": false,
-    "attendedAt": null,
-    "user": {
-      "id": "user_789",
-      "firstName": "Bob",
-      "lastName": "Johnson",
-      "email": "bob.johnson@example.com"
+      "lastName": "Smith"
     }
   }
 ]
 ```
 
-### Invite attendees
+### Check In Attendee
 
-Sends email invitations to potential attendees for an event.
+> Checks in an attendee to an event
 
-**Request:**
+```
+POST /events/:id/attendees/:assigneeId/check-in
+```
 
-```http
-POST /events/:id/attendees/invite
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
+**Authorization**: Bearer token required (event organizer only)
 
+**Example Response**
+
+```json
 {
-  "emails": ["guest1@example.com", "guest2@example.com"],
-  "message": "You are invited to my tech conference!"
+  "id": "asn_1234",
+  "email": "attendee@example.com",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "attendedAt": "2025-05-15T10:30:00Z",
+  "ticketId": "tck_1234",
+  "userId": "user_5678",
+  "eventId": "evt_1234",
+  "user": {
+    "id": "user_5678",
+    "email": "attendee@example.com",
+    "firstName": "Jane",
+    "lastName": "Smith"
+  }
 }
 ```
 
-**Response:** `200 OK`
+### Invite Attendees
+
+> Sends invitations to potential attendees
+
+```
+POST /events/:id/attendees/invite
+```
+
+**Authorization**: Bearer token required (event organizer only)
+
+**Parameters**
+
+| Field     | Type   | Description                                         |
+| --------- | ------ | --------------------------------------------------- |
+| `emails`  | array  | _Required_. Array of email addresses                |
+| `message` | string | _Optional_. Custom message to include in invitation |
+
+**Example Request**
+
+```json
+{
+  "emails": ["invitee@example.com", "another@example.com"],
+  "message": "We'd love to have you join our tech conference!"
+}
+```
+
+**Example Response**
 
 ```json
 {
   "results": [
     {
-      "email": "guest1@example.com",
+      "email": "invitee@example.com",
       "status": "sent"
     },
     {
-      "email": "guest2@example.com",
+      "email": "another@example.com",
       "status": "sent"
     }
   ]
 }
 ```
 
-### Get attendee connections
-
-Retrieves a list of people the authenticated user has met at events.
-
-**Request:**
-
-```http
-GET /attendees/connections
-Authorization: Bearer your_jwt_token
-```
-
-**Response:** `200 OK`
-
-```json
-[
-  {
-    "event": {
-      "id": "event_123",
-      "title": "Tech Conference 2025",
-      "date": "2025-06-15T09:00:00Z"
-    },
-    "attendees": [
-      {
-        "id": "user_456",
-        "firstName": "Jane",
-        "lastName": "Smith",
-        "email": "jane.smith@example.com"
-      },
-      {
-        "id": "user_789",
-        "firstName": "Bob",
-        "lastName": "Johnson",
-        "email": "bob.johnson@example.com"
-      }
-    ]
-  }
-]
-```
-
 ## Analytics
 
-### Get event analytics
+### Get Event Analytics
 
-Retrieves analytics data for a specific event, including ticket sales and attendance information.
+> Retrieves analytics for a specific event
 
-**Request:**
-
-```http
+```
 GET /events/:id/analytics
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required (event organizer only)
+
+**Example Response**
 
 ```json
 {
-  "ticketsSold": 45,
-  "attendees": 30,
-  "revenue": 8999.75,
-  "attendanceRate": 66.67
+  "ticketsSold": 150,
+  "attendees": 75,
+  "revenue": 28500,
+  "attendanceRate": 50
 }
 ```
 
-### Get sales analytics
+### Get Sales Analytics
 
-Retrieves sales analytics data across all events or for events organized by the authenticated user.
+> Retrieves sales analytics for the organizer's events
 
-**Request:**
-
-```http
-GET /analytics/sales?startDate=2025-01-01&endDate=2025-07-01
-Authorization: Bearer your_jwt_token
+```
+GET /analytics/sales
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Query Parameters**
+
+| Field       | Type   | Description                                                    |
+| ----------- | ------ | -------------------------------------------------------------- |
+| `startDate` | string | _Optional_. Start date for analytics (defaults to 30 days ago) |
+| `endDate`   | string | _Optional_. End date for analytics (defaults to current date)  |
+
+**Example Response**
 
 ```json
 {
   "sales": [
     {
-      "date": "2025-01-15T00:00:00Z",
-      "count": 5,
-      "revenue": 1499.95
+      "date": "2025-03-01T00:00:00Z",
+      "count": 15,
+      "revenue": 2250
     },
     {
-      "date": "2025-02-20T00:00:00Z",
-      "count": 12,
-      "revenue": 2499.88
+      "date": "2025-03-02T00:00:00Z",
+      "count": 22,
+      "revenue": 3650
     }
   ],
-  "totalSales": 17,
-  "totalRevenue": 3999.83
+  "totalSales": 150,
+  "totalRevenue": 28500
 }
 ```
 
-### Get attendance analytics
+### Get Attendance Analytics
 
-Retrieves attendance analytics data across all events or for events organized by the authenticated user.
+> Retrieves attendance analytics for the organizer's events
 
-**Request:**
-
-```http
+```
 GET /analytics/attendance
-Authorization: Bearer your_jwt_token
 ```
 
-**Response:** `200 OK`
+**Authorization**: Bearer token required
+
+**Query Parameters**
+
+| Field       | Type   | Description                                                    |
+| ----------- | ------ | -------------------------------------------------------------- |
+| `startDate` | string | _Optional_. Start date for analytics (defaults to 30 days ago) |
+| `endDate`   | string | _Optional_. End date for analytics (defaults to current date)  |
+
+**Example Response**
+
+I'll continue the Attendance Analytics API documentation where it was cut off:
 
 ```json
 {
   "events": [
     {
-      "eventId": "event_123",
+      "eventId": "evt_1234",
       "title": "Tech Conference 2025",
-      "date": "2025-06-15T09:00:00Z",
-      "ticketsSold": 45,
-      "actualAttendees": 30,
-      "attendanceRate": 66.67
+      "date": "2025-05-15T09:00:00Z",
+      "ticketsSold": 150,
+      "actualAttendees": 75,
+      "attendanceRate": 50
     },
     {
-      "eventId": "event_124",
-      "title": "Product Launch",
-      "date": "2025-04-10T10:00:00Z",
-      "ticketsSold": 100,
-      "actualAttendees": 92,
-      "attendanceRate": 92
+      "eventId": "evt_5678",
+      "title": "Music Festival 2025",
+      "date": "2025-07-20T16:00:00Z",
+      "ticketsSold": 800,
+      "actualAttendees": 720,
+      "attendanceRate": 90
     }
   ],
   "summary": {
     "totalEvents": 2,
-    "totalTicketsSold": 145,
-    "totalAttendees": 122,
-    "averageAttendanceRate": 79.33
+    "totalTicketsSold": 950,
+    "totalAttendees": 795,
+    "averageAttendanceRate": 70
   }
 }
 ```
 
 ## Real-time Communication
 
-Eventify API supports real-time communication using Socket.IO.
+Eventify supports real-time communication via WebSockets for event chat and user interactions.
 
-### Connection Authentication
+### Authentication
 
-Authentication is required to establish a Socket.IO connection:
+To authenticate with the socket server, include your JWT token when establishing the connection:
 
 ```javascript
-const socket = io("https://api.eventify.com", {
+const socket = io("YOUR_BACKEND_URL", {
   auth: {
     token: "your_jwt_token",
   },
 });
 ```
 
-### Event Communication
+### Event Rooms
 
-Once connected, clients can:
+#### Join Event Room
 
-#### Join an event room
+> Joins an event's real-time communication room
 
-```javascript
-socket.emit("join-event", "event_123");
+```
+socket.emit("join-event", eventId)
 ```
 
-Response on successful join:
+**Example Response**
 
 ```javascript
 socket.on("joined-event", (data) => {
-  console.log(`Joined event: ${data.eventId}`);
+  console.log(`Joined event ${data.eventId}`);
 });
 ```
 
-#### Leave an event room
+#### Leave Event Room
 
-```javascript
-socket.emit("leave-event", "event_123");
+> Leaves an event's real-time communication room
+
+```
+socket.emit("leave-event", eventId)
 ```
 
-#### Send typing indicators
+### Messaging
 
-```javascript
-socket.emit("typing", { eventId: "event_123", isTyping: true });
+#### New Message Notification
+
+> Listens for new messages in an event
+
+```
+socket.on("new-message", callback)
 ```
 
-#### Receive messages and updates
+**Example Response**
 
 ```javascript
-// Listen for new messages
 socket.on("new-message", (message) => {
-  console.log("New message:", message);
-});
-
-// Listen for typing updates
-socket.on("typing-update", (data) => {
   console.log(
-    `${data.firstName} ${data.lastName} is ${data.isTyping ? "typing..." : "stopped typing"}`,
+    `New message from ${message.sender.firstName}: ${message.content}`,
   );
 });
+```
 
-// Listen for errors
-socket.on("error", (error) => {
-  console.error("Socket error:", error.message);
+### Typing Indicators
+
+#### Send Typing Status
+
+> Notifies other users when you are typing
+
+```
+socket.emit("typing", { eventId, isTyping })
+```
+
+**Parameters**
+
+| Field      | Type    | Description                                    |
+| ---------- | ------- | ---------------------------------------------- |
+| `eventId`  | string  | _Required_. ID of the event                    |
+| `isTyping` | boolean | _Required_. True if user is typing, else false |
+
+#### Receive Typing Status
+
+> Receives notifications when other users are typing
+
+```
+socket.on("typing-update", callback)
+```
+
+**Example Response**
+
+```javascript
+socket.on("typing-update", (data) => {
+  console.log(
+    `${data.firstName} ${data.lastName} is ${data.isTyping ? "typing..." : "not typing"}`,
+  );
 });
 ```
 
-## Error Handling
+### Error Handling
 
-All API endpoints return appropriate HTTP status codes and error messages in case of failures.
+> Listens for socket error events
 
-Standard error response format:
-
-```json
-{
-  "message": "Error message description"
-}
+```
+socket.on("error", callback)
 ```
 
-Common HTTP status codes:
+**Example Response**
 
-- `400`: Bad Request - The request contains invalid parameters
-- `401`: Unauthorized - Authentication is required or has failed
-- `403`: Forbidden - The authenticated user doesn't have permission
-- `404`: Not Found - The requested resource doesn't exist
-- `409`: Conflict - The request conflicts with the current state
-- `500`: Internal Server Error - Something went wrong on the server
-
-## Data Models
-
-### User
-
-```json
-{
-  "id": "string",
-  "email": "string",
-  "firstName": "string",
-  "lastName": "string",
-  "createdAt": "datetime",
-  "updatedAt": "datetime"
-}
-```
-
-### Event
-
-```json
-{
-  "id": "string",
-  "title": "string",
-  "description": "string",
-  "startDate": "datetime",
-  "endDate": "datetime",
-  "location": "string|null",
-  "virtualLink": "string|null",
-  "capacity": "integer",
-  "category": "string",
-  "status": "DRAFT|PUBLISHED|CANCELLED|COMPLETED",
-  "organizerId": "string",
-  "createdAt": "datetime",
-  "updatedAt": "datetime"
-}
-```
-
-### Ticket Type
-
-```json
-{
-  "id": "string",
-  "name": "string",
-  "price": "float",
-  "quantity": "integer",
-  "description": "string|null",
-  "maxPerUser": "integer",
-  "saleStartDate": "datetime",
-  "saleEndDate": "datetime",
-  "eventId": "string",
-  "createdAt": "datetime",
-  "updatedAt": "datetime"
-}
-```
-
-### Ticket
-
-```json
-{
-  "id": "string",
-  "purchaseDate": "datetime",
-  "status": "PENDING|VALID|USED|CANCELLED|EXPIRED",
-  "paymentReference": "string|null",
-  "userId": "string",
-  "eventId": "string",
-  "ticketTypeId": "string",
-  "createdAt": "datetime",
-  "updatedAt": "datetime"
-}
-```
-
-### Message
-
-```json
-{
-  "id": "string",
-  "content": "string",
-  "senderId": "string",
-  "eventId": "string",
-  "createdAt": "datetime",
-  "updatedAt": "datetime"
-}
+```javascript
+socket.on("error", (error) => {
+  console.error(`Socket error: ${error.message}`);
+});
 ```
