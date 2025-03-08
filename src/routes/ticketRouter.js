@@ -4,9 +4,14 @@ const {
   verifyPayment,
   getUserTickets,
   getTicketDetails,
+  assignTicket,
+  removeTicketAssignment,
 } = require("../controllers/ticketController");
 const { protect } = require("../middleware/auth");
-const { validateTicketPurchase } = require("../middleware/validate");
+const {
+  validateTicketPurchase,
+  validateTicketAssignment,
+} = require("../middleware/validate");
 const {
   validatePaymentReference,
 } = require("../middleware/transactionValidation");
@@ -17,5 +22,12 @@ router.post("/purchase", protect, validateTicketPurchase, purchaseTicket);
 router.get("/verify", protect, validatePaymentReference, verifyPayment);
 router.get("/user", protect, getUserTickets);
 router.get("/:id", protect, getTicketDetails);
+router.post(
+  "/:ticketId/assign",
+  protect,
+  validateTicketAssignment,
+  assignTicket,
+);
+router.delete("/:ticketId/assign", protect, removeTicketAssignment);
 
 module.exports = router;

@@ -1,27 +1,101 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
 const sendgrid = require("@sendgrid/mail");
+const { NotFoundError, BadRequestError } = require("../utils/errors");
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 const getEventAttendees = asyncHandler(async (req, res) => {
-  const eventId = req.event.id; // Use event from middleware
+  const eventId = req.event.id;
 
-  const attendees = await prisma.eventAttendee.findMany({
-    where: { eventId },
+  const attendees = await prisma.ticketAssignee.findMany({
+    where: {
+      eventId,
+    },
     include: {
+      ticket: {
+        include: {
+          ticketType: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
       user: {
         select: {
           id: true,
+          email: true,
           firstName: true,
           lastName: true,
-          email: true,
         },
       },
     },
+    orderBy: [
+      { attendedAt: "desc" },
+      { lastName: "asc" },
+      { firstName: "asc" },
+    ],
   });
 
   res.json(attendees);
+});
+
+const checkInAttendee = asyncHandler(async (req, res) => {
+  const eventId = req.event.id;
+  const { assigneeId } = req.params;
+
+  // Find attendee
+  const attendee = await prisma.ticketAssignee.findFirst({
+    where: {
+      id: assigneeId,
+      eventId,
+    },
+    include: {
+      ticket: true,
+    },
+  });
+
+  if (!attendee) {
+    throw new NotFoundError("Attendee not found for this event");
+  }
+
+  if (attendee.attendedAt) {
+    throw new BadRequestError("Attendee already checked in");
+  }
+
+  // Check in attendee and mark ticket as used
+  const updatedAttendee = await prisma.$transaction(async (tx) => {
+    // Update attendee
+    const updated = await tx.ticketAssignee.update({
+      where: { id: assigneeId },
+      data: {
+        attendedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    // Mark ticket as used
+    await tx.ticket.update({
+      where: { id: attendee.ticketId },
+      data: {
+        status: "USED",
+      },
+    });
+
+    return updated;
+  });
+
+  res.json(updatedAttendee);
 });
 
 const inviteAttendees = asyncHandler(async (req, res) => {
@@ -83,60 +157,8 @@ const inviteAttendees = asyncHandler(async (req, res) => {
   res.status(200).json({ results });
 });
 
-const getAttendeeConnections = asyncHandler(async (req, res) => {
-  // Get all events user has attended or is attending
-  const connections = await prisma.eventAttendee.findMany({
-    where: {
-      userId: req.user.id,
-    },
-    include: {
-      event: {
-        select: {
-          id: true,
-          title: true,
-          startDate: true,
-          attendees: {
-            where: {
-              NOT: {
-                userId: req.user.id,
-              },
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Format connections by event
-  const formattedConnections = connections.map((connection) => ({
-    event: {
-      id: connection.event.id,
-      title: connection.event.title,
-      date: connection.event.startDate,
-    },
-    attendees: connection.event.attendees.map((attendee) => ({
-      id: attendee.user.id,
-      firstName: attendee.user.firstName,
-      lastName: attendee.user.lastName,
-      email: attendee.user.email,
-    })),
-  }));
-
-  res.json(formattedConnections);
-});
-
 module.exports = {
   getEventAttendees,
+  checkInAttendee,
   inviteAttendees,
-  getAttendeeConnections,
 };

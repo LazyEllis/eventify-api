@@ -14,10 +14,12 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
       },
     }),
     // Total attendees checked in
-    prisma.eventAttendee.count({
+    prisma.ticketAssignee.count({
       where: {
         eventId,
-        attended: true,
+        attendedAt: {
+          not: null,
+        },
       },
     }),
     // Total revenue
@@ -57,8 +59,7 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
     : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Default to last 30 days
   const end = endDate ? new Date(endDate) : new Date();
 
-  const sales = await prisma.ticket.groupBy({
-    by: ["purchaseDate"],
+  const sales = await prisma.ticket.findMany({
     where: {
       status: "VALID",
       purchaseDate: {
@@ -69,29 +70,42 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
         organizerId: req.user.id,
       },
     },
-    _count: {
-      id: true,
-    },
-    _sum: {
+    include: {
       ticketType: {
         select: {
           price: true,
         },
       },
     },
+    orderBy: {
+      purchaseDate: "asc",
+    },
   });
 
+  // Group sales by date
+  const salesByDate = sales.reduce((acc, ticket) => {
+    const dateStr = ticket.purchaseDate.toISOString().split("T")[0];
+
+    if (!acc[dateStr]) {
+      acc[dateStr] = {
+        date: new Date(dateStr),
+        count: 0,
+        revenue: 0,
+      };
+    }
+
+    acc[dateStr].count += 1;
+    acc[dateStr].revenue += ticket.ticketType.price;
+
+    return acc;
+  }, {});
+
+  const salesArray = Object.values(salesByDate);
+
   res.json({
-    sales: sales.map((day) => ({
-      date: day.purchaseDate,
-      count: day._count.id,
-      revenue: day._sum.ticketType?.price || 0,
-    })),
-    totalSales: sales.reduce((sum, day) => sum + day._count.id, 0),
-    totalRevenue: sales.reduce(
-      (sum, day) => sum + (day._sum.ticketType?.price || 0),
-      0,
-    ),
+    sales: salesArray,
+    totalSales: sales.length,
+    totalRevenue: salesArray.reduce((sum, day) => sum + day.revenue, 0),
   });
 });
 
@@ -111,18 +125,22 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
       organizerId: req.user.id,
     },
     include: {
-      _count: {
+      tickets: {
+        where: {
+          status: "VALID",
+        },
         select: {
-          tickets: {
-            where: {
-              status: "VALID",
-            },
+          id: true,
+        },
+      },
+      TicketAssignee: {
+        where: {
+          attendedAt: {
+            not: null,
           },
-          attendees: {
-            where: {
-              attended: true,
-            },
-          },
+        },
+        select: {
+          id: true,
         },
       },
     },
@@ -132,11 +150,11 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
     eventId: event.id,
     title: event.title,
     date: event.startDate,
-    ticketsSold: event._count.tickets,
-    actualAttendees: event._count.attendees,
+    ticketsSold: event.tickets.length,
+    actualAttendees: event.TicketAssignee.length,
     attendanceRate:
-      event._count.tickets > 0
-        ? (event._count.attendees / event._count.tickets) * 100
+      event.tickets.length > 0
+        ? (event.TicketAssignee.length / event.tickets.length) * 100
         : 0,
   }));
 
@@ -145,11 +163,11 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
     summary: {
       totalEvents: events.length,
       totalTicketsSold: events.reduce(
-        (sum, event) => sum + event._count.tickets,
+        (sum, event) => sum + event.tickets.length,
         0,
       ),
       totalAttendees: events.reduce(
-        (sum, event) => sum + event._count.attendees,
+        (sum, event) => sum + event.TicketAssignee.length,
         0,
       ),
       averageAttendanceRate:

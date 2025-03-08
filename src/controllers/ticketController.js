@@ -204,10 +204,135 @@ const verifyPayment = asyncHandler(async (req, res) => {
   }
 });
 
+const assignTicket = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+  const { email, firstName, lastName, userId } = req.body;
+
+  // Validate ticket ownership
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { event: true },
+  });
+
+  if (!ticket) {
+    throw new NotFoundError("Ticket not found");
+  }
+
+  if (ticket.purchaserId !== req.user.id) {
+    throw new ForbiddenError("Not authorized to assign this ticket");
+  }
+
+  // Check if ticket is already assigned
+  const existingAssignment = await prisma.ticketAssignee.findUnique({
+    where: { ticketId },
+  });
+
+  if (existingAssignment) {
+    throw new BadRequestError("Ticket is already assigned");
+  }
+
+  // If assigning to a registered user
+  if (userId) {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    // Check if user already has a ticket for this event
+    const existingTicket = await prisma.ticketAssignee.findFirst({
+      where: {
+        userId,
+        eventId: ticket.eventId,
+      },
+    });
+
+    if (existingTicket) {
+      throw new BadRequestError("User already has a ticket for this event");
+    }
+
+    // Assign ticket to user
+    const assignee = await prisma.ticketAssignee.create({
+      data: {
+        ticketId,
+        userId,
+        eventId: ticket.eventId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
+
+    res.status(201).json(assignee);
+  }
+  // If assigning to an email (non-registered user)
+  else if (email) {
+    // Check if email already has a ticket for this event
+    const existingTicket = await prisma.ticketAssignee.findFirst({
+      where: {
+        email,
+        eventId: ticket.eventId,
+      },
+    });
+
+    if (existingTicket) {
+      throw new BadRequestError("Email already has a ticket for this event");
+    }
+
+    // Assign ticket to email
+    const assignee = await prisma.ticketAssignee.create({
+      data: {
+        ticketId,
+        email,
+        firstName,
+        lastName,
+        eventId: ticket.eventId,
+      },
+    });
+
+    res.status(201).json(assignee);
+  } else {
+    throw new BadRequestError("Either userId or email must be provided");
+  }
+});
+
+const removeTicketAssignment = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+
+  // Validate ticket ownership
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: { assignee: true },
+  });
+
+  if (!ticket) {
+    throw new NotFoundError("Ticket not found");
+  }
+
+  if (ticket.purchaserId !== req.user.id) {
+    throw new ForbiddenError("Not authorized to manage this ticket");
+  }
+
+  if (!ticket.assignee) {
+    throw new NotFoundError("Ticket is not assigned");
+  }
+
+  // Remove assignment
+  await prisma.ticketAssignee.delete({
+    where: { ticketId },
+  });
+
+  res.status(204).send();
+});
+
 const getUserTickets = asyncHandler(async (req, res) => {
   const tickets = await prisma.ticket.findMany({
     where: {
-      userId: req.user.id,
+      purchaserId: req.user.id,
     },
     include: {
       event: {
@@ -216,7 +341,7 @@ const getUserTickets = asyncHandler(async (req, res) => {
           startDate: true,
           endDate: true,
           location: true,
-          isVirtual: true,
+          eventType: true,
           virtualLink: true,
         },
       },
@@ -226,6 +351,7 @@ const getUserTickets = asyncHandler(async (req, res) => {
           price: true,
         },
       },
+      assignee: true,
     },
   });
 
@@ -255,6 +381,17 @@ const getTicketDetails = asyncHandler(async (req, res) => {
           email: true,
         },
       },
+      assignee: {
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -262,7 +399,7 @@ const getTicketDetails = asyncHandler(async (req, res) => {
     throw new NotFoundError("Ticket not found");
   }
 
-  if (ticket.userId !== req.user.id && req.user.role !== "ADMIN") {
+  if (ticket.purchaserId !== req.user.id) {
     throw new ForbiddenError("Not authorized to view ticket details");
   }
 
@@ -274,4 +411,6 @@ module.exports = {
   verifyPayment,
   getUserTickets,
   getTicketDetails,
+  assignTicket,
+  removeTicketAssignment,
 };

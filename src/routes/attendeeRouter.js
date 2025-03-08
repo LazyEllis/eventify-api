@@ -1,8 +1,8 @@
 const express = require("express");
 const {
   getEventAttendees,
+  checkInAttendee,
   inviteAttendees,
-  getAttendeeConnections,
 } = require("../controllers/attendeeController");
 const { protect } = require("../middleware/auth");
 const { validateInvite } = require("../middleware/validate");
@@ -18,13 +18,18 @@ router.get(
 );
 
 router.post(
+  "/events/:id/attendees/:assigneeId/check-in",
+  protect,
+  validateEventOwnership,
+  checkInAttendee,
+);
+
+router.post(
   "/events/:id/attendees/invite",
   protect,
   validateEventOwnership,
   validateInvite,
   inviteAttendees,
 );
-
-router.get("/attendees/connections", protect, getAttendeeConnections);
 
 module.exports = router;

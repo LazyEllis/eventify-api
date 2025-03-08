@@ -47,9 +47,11 @@ const getUserEvents = asyncHandler(async (req, res) => {
       _count: {
         select: {
           tickets: true,
-          attendees: {
+          TicketAssignee: {
             where: {
-              attended: true,
+              attendedAt: {
+                not: null,
+              },
             },
           },
         },

@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const { validationResult, body } = require("express-validator");
+const { BadRequestError } = require("../utils/errors");
 
 const validate = (validations) =>
   asyncHandler(async (req, res, next) => {
@@ -7,7 +8,8 @@ const validate = (validations) =>
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      const firstError = errors.array()[0];
+      throw new BadRequestError(firstError.msg);
     }
     next();
   });
@@ -29,10 +31,43 @@ const validateEvent = validate([
   body("description").notEmpty(),
   body("startDate").isISO8601().toDate(),
   body("endDate").isISO8601().toDate(),
+  body("eventType")
+    .isIn(["PHYSICAL", "VIRTUAL", "HYBRID"])
+    .withMessage("Invalid event type"),
   body("capacity").isInt({ min: 1 }),
   body("category").notEmpty(),
-  body("virtualLink").isURL().optional(),
-  body("location").optional(),
+  body().custom((body) => {
+    // Validate fields based on eventType
+    switch (body.eventType) {
+      case "PHYSICAL":
+        if (!body.location) {
+          throw new Error("Location is required for physical events");
+        }
+        if (body.virtualLink) {
+          throw new Error(
+            "Virtual link should not be provided for physical events",
+          );
+        }
+        break;
+      case "VIRTUAL":
+        if (!body.virtualLink) {
+          throw new Error("Virtual link is required for virtual events");
+        }
+        if (body.location) {
+          throw new Error("Location should not be provided for virtual events");
+        }
+        break;
+      case "HYBRID":
+        if (!body.location) {
+          throw new Error("Location is required for hybrid events");
+        }
+        if (!body.virtualLink) {
+          throw new Error("Virtual link is required for hybrid events");
+        }
+        break;
+    }
+    return true;
+  }),
 ]);
 
 const validateTicketType = validate([
@@ -67,6 +102,13 @@ const validateTicketPurchase = validate([
     .withMessage("Quantity must be at least 1"),
 ]);
 
+const validateTicketAssignment = validate([
+  body("email").isEmail().optional(),
+  body("firstName").isString().optional(),
+  body("lastName").isString().optional(),
+  body("userId").isString().optional(),
+]);
+
 const validateMessage = validate([
   body("content")
     .notEmpty()
@@ -95,6 +137,7 @@ module.exports = {
   validateEvent,
   validateTicketType,
   validateTicketPurchase,
+  validateTicketAssignment,
   validateMessage,
   validateInvite,
 };
