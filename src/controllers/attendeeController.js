@@ -137,9 +137,6 @@ const inviteAttendees = asyncHandler(async (req, res) => {
         },
       });
 
-      console.log(event);
-      console.log(req.user);
-
       // Send email with all template variables
       await sendgrid.send({
         to: email,
@@ -149,7 +146,7 @@ const inviteAttendees = asyncHandler(async (req, res) => {
           inviterName: `${event.organizer.firstName} ${event.organizer.lastName}`,
           eventName: event.title,
           eventDate: eventDate,
-          isVirtual: event.isVirtual,
+          eventType: event.eventType,
           eventLocation: event.location || "",
           eventDescription: event.description,
           message: message || "",
