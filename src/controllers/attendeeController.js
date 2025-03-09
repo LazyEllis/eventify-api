@@ -42,8 +42,19 @@ const getEventAttendees = asyncHandler(async (req, res) => {
 });
 
 const checkInAttendee = asyncHandler(async (req, res) => {
-  const eventId = req.event.id;
+  const event = req.event; // Already loaded from middleware
+  const eventId = event.id;
   const { assigneeId } = req.params;
+
+  // Check if the event is actually happening now
+  const now = new Date();
+  if (now < event.startDate) {
+    throw new BadRequestError("Cannot check in before event starts");
+  }
+
+  if (now > event.endDate) {
+    throw new BadRequestError("Cannot check in after event ends");
+  }
 
   // Find attendee
   const attendee = await prisma.ticketAssignee.findFirst({
