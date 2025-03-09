@@ -30,25 +30,35 @@ Eventify API provides a scalable backend solution for event management platforms
   - Registration and authentication
   - Profile management
   - JWT-based authorization
+  - Personalized dashboard with event statistics
 
 - **Event Management**
+
   - Create, update, read, and delete events
   - Support for physical, virtual, and hybrid events
   - Event status tracking (draft, published, cancelled, completed)
+
 - **Ticket Management**
+
   - Multiple ticket types per event
   - Customizable pricing and availability
   - Secure payment processing via Paystack
   - Ticket assignment and transfer
+
 - **Attendee Management**
+
   - Attendee check-in
   - Email invitations
   - Attendee tracking
+
 - **Messaging System**
+
   - Event-specific communication
   - Real-time updates with WebSockets
   - Typing indicators
+
 - **Analytics**
+
   - Event performance metrics
   - Sales analytics
   - Attendance tracking
@@ -145,6 +155,7 @@ Comprehensive API documentation is available in the [DOCUMENTATION.md](DOCUMENTA
 
 - Authentication details
 - Endpoint descriptions
+- Dashboard analytics and statistics
 - Request/response formats
 - Error handling
 - Examples for all operations

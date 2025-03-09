@@ -1129,8 +1129,6 @@ GET /analytics/attendance
 
 **Example Response**
 
-I'll continue the Attendance Analytics API documentation where it was cut off:
-
 ```json
 {
   "events": [
@@ -1159,6 +1157,68 @@ I'll continue the Attendance Analytics API documentation where it was cut off:
   }
 }
 ```
+
+## Dashboard
+
+### Get Dashboard Data
+
+> Retrieves dashboard data for the authenticated user
+
+```
+GET /dashboard
+```
+
+**Authorization**: Bearer token required
+
+**Example Response**
+
+```json
+{
+  "upcomingEvents": 3,
+  "myTickets": 5,
+  "totalAttendees": 42,
+  "revenue": 5750.0,
+  "revenueChange": 15,
+  "upcomingEventsList": [
+    {
+      "id": "evt_1234",
+      "title": "Tech Conference 2025",
+      "startDate": "2025-05-15T09:00:00Z",
+      "location": "Convention Center, City",
+      "eventType": "HYBRID",
+      "virtualLink": "https://example.com/virtual-conference",
+      "status": "PUBLISHED"
+    }
+  ],
+  "recentActivities": [
+    {
+      "id": "ticket-tck_1234",
+      "type": "TICKET_PURCHASE",
+      "description": "Ticket purchased: VIP Pass for Tech Conference 2025",
+      "timestamp": "2025-03-08T14:30:00Z"
+    },
+    {
+      "id": "event-evt_5678",
+      "type": "EVENT_CREATION",
+      "description": "Event created: Workshop on AI",
+      "timestamp": "2025-03-07T10:15:00Z"
+    },
+    {
+      "id": "checkin-att_9012",
+      "type": "ATTENDEE_CHECKIN",
+      "description": "Attendee checked in: Jane Smith for Tech Conference 2025",
+      "timestamp": "2025-03-05T09:45:00Z"
+    }
+  ]
+}
+```
+
+The dashboard endpoint provides:
+
+- Counts of upcoming events, tickets, and attendees
+- Revenue data and month-over-month change percentage
+- List of upcoming events with details
+- Recent activities (ticket purchases, event creations, attendee check-ins)
 
 ## Real-time Communication
 
