@@ -10,7 +10,7 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
     prisma.ticket.count({
       where: {
         eventId,
-        status: "VALID",
+        status: { in: ["VALID", "USED", "EXPIRED"] },
       },
     }),
     // Total attendees checked in
@@ -26,7 +26,7 @@ const getEventAnalytics = asyncHandler(async (req, res) => {
     prisma.ticket.findMany({
       where: {
         eventId,
-        status: "VALID",
+        status: { in: ["VALID", "USED", "EXPIRED"] },
       },
       include: {
         ticketType: {
@@ -61,7 +61,7 @@ const getSalesAnalytics = asyncHandler(async (req, res) => {
 
   const sales = await prisma.ticket.findMany({
     where: {
-      status: "VALID",
+      status: { in: ["VALID", "USED", "EXPIRED"] }, // Include all sold tickets regardless of current status
       purchaseDate: {
         gte: start,
         lte: end,
@@ -127,7 +127,7 @@ const getAttendanceAnalytics = asyncHandler(async (req, res) => {
     include: {
       tickets: {
         where: {
-          status: "VALID",
+          status: { in: ["VALID", "USED", "EXPIRED"] },
         },
         select: {
           id: true,
