@@ -22,7 +22,7 @@ const validateEventAccess = asyncHandler(async (req, res, next) => {
   const hasAccess = await prisma.ticket.findFirst({
     where: {
       eventId,
-      userId: req.user.id,
+      purchaserId: req.user.id,
       status: "VALID",
     },
   });

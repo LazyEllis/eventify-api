@@ -43,7 +43,7 @@ const purchaseTicket = asyncHandler(async (req, res) => {
     const existingTickets = await prisma.ticket.count({
       where: {
         ticketTypeId: ticketType.id,
-        userId: req.user.id,
+        purchaserId: req.user.id,
         status: "VALID",
       },
     });
@@ -81,7 +81,7 @@ const purchaseTicket = asyncHandler(async (req, res) => {
       callback_url: `${process.env.FRONTEND_URL}/payment/verify`,
       metadata: {
         eventId,
-        userId: req.user.id,
+        purchaserId: req.user.id,
         tickets: tickets,
         custom_fields: [
           {
@@ -112,7 +112,7 @@ const purchaseTicket = asyncHandler(async (req, res) => {
         for (let i = 0; i < requestedTicket.quantity; i++) {
           const ticket = await prisma.ticket.create({
             data: {
-              userId: req.user.id,
+              purchaserId: req.user.id,
               eventId,
               ticketTypeId: requestedTicket.ticketTypeId,
               status: "PENDING",
@@ -374,7 +374,7 @@ const getTicketDetails = asyncHandler(async (req, res) => {
         },
       },
       ticketType: true,
-      user: {
+      purchaser: {
         select: {
           firstName: true,
           lastName: true,

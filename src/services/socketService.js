@@ -5,7 +5,7 @@ const prisma = require("../config/database");
 let io;
 
 // Helper function to check event access (similar to the middleware)
-const checkEventAccess = async (userId, eventId, userRole) => {
+const checkEventAccess = async (userId, eventId) => {
   // Check if event exists
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -15,16 +15,16 @@ const checkEventAccess = async (userId, eventId, userRole) => {
     return { access: false, error: "Event not found" };
   }
 
-  // Check if user has access (valid ticket or is organizer/admin)
+  // Check if user has access (valid ticket or is organizer)
   const hasAccess = await prisma.ticket.findFirst({
     where: {
       eventId,
-      userId: userId,
+      purchaserId: userId,
       status: "VALID",
     },
   });
 
-  if (!hasAccess && event.organizerId !== userId && userRole !== "ADMIN") {
+  if (!hasAccess && event.organizerId !== userId) {
     return { access: false, error: "Not authorized to access this event" };
   }
 
@@ -49,7 +49,7 @@ const initializeSocket = (server) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, firstName: true, lastName: true, role: true },
+        select: { id: true, firstName: true, lastName: true },
       });
 
       if (!user) {
@@ -72,7 +72,6 @@ const initializeSocket = (server) => {
         const { access, error } = await checkEventAccess(
           socket.user.id,
           eventId,
-          socket.user.role,
         );
 
         if (!access) {
@@ -98,7 +97,6 @@ const initializeSocket = (server) => {
         const { access, error } = await checkEventAccess(
           socket.user.id,
           eventId,
-          socket.user.role,
         );
 
         if (!access) {
