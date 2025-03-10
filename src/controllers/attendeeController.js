@@ -127,16 +127,6 @@ const inviteAttendees = asyncHandler(async (req, res) => {
   // Send invitations
   const invitePromises = emails.map(async (email) => {
     try {
-      // Create invitation record
-      await prisma.eventInvitation.create({
-        data: {
-          email,
-          eventId: event.id,
-          status: "PENDING",
-          message,
-        },
-      });
-
       // Send email with all template variables
       await sendgrid.send({
         to: email,

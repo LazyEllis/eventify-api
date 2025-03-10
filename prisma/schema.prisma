@@ -47,7 +47,6 @@ model Event {
   ticketTypes    TicketType[]
   TicketAssignee TicketAssignee[]
   messages       Message[]        @relation("EventMessages")
-  invitations    EventInvitation[]
 }
 
 // Ticket model
@@ -123,19 +122,6 @@ model Message {
   eventId   String
 }
 
-model EventInvitation {
-  id        String           @id @default(uuid())
-  email     String
-  status    InvitationStatus @default(PENDING)
-  message   String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  
-  // Relations
-  event     Event     @relation(fields: [eventId], references: [id])
-  eventId   String
-}
-
 // Enums
 enum EventType {
   PHYSICAL
@@ -156,10 +142,4 @@ enum TicketStatus {
   USED
   CANCELLED
   EXPIRED
-}
-
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
 }
