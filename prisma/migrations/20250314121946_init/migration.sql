@@ -1,11 +1,11 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'ORGANIZER', 'ATTENDEE', 'SPONSOR');
+CREATE TYPE "EventType" AS ENUM ('PHYSICAL', 'VIRTUAL', 'HYBRID');
 
 -- CreateEnum
 CREATE TYPE "EventStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED');
 
 -- CreateEnum
-CREATE TYPE "TicketStatus" AS ENUM ('VALID', 'USED', 'CANCELLED', 'EXPIRED');
+CREATE TYPE "TicketStatus" AS ENUM ('PENDING', 'VALID', 'USED', 'CANCELLED', 'EXPIRED');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -14,7 +14,6 @@ CREATE TABLE "User" (
     "password" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "role" "Role" NOT NULL DEFAULT 'ATTENDEE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -28,8 +27,8 @@ CREATE TABLE "Event" (
     "description" TEXT NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
+    "eventType" "EventType" NOT NULL DEFAULT 'PHYSICAL',
     "location" TEXT,
-    "isVirtual" BOOLEAN NOT NULL DEFAULT false,
     "virtualLink" TEXT,
     "capacity" INTEGER NOT NULL,
     "category" TEXT NOT NULL,
@@ -48,6 +47,9 @@ CREATE TABLE "TicketType" (
     "price" DOUBLE PRECISION NOT NULL,
     "quantity" INTEGER NOT NULL,
     "description" TEXT,
+    "maxPerUser" INTEGER NOT NULL DEFAULT 10,
+    "saleStartDate" TIMESTAMP(3) NOT NULL,
+    "saleEndDate" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -60,13 +62,30 @@ CREATE TABLE "Ticket" (
     "id" TEXT NOT NULL,
     "purchaseDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "TicketStatus" NOT NULL DEFAULT 'VALID',
+    "paymentReference" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "userId" TEXT NOT NULL,
+    "purchaserId" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
     "ticketTypeId" TEXT NOT NULL,
 
     CONSTRAINT "Ticket_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TicketAssignee" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "attendedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "ticketId" TEXT NOT NULL,
+    "userId" TEXT,
+    "eventId" TEXT NOT NULL,
+
+    CONSTRAINT "TicketAssignee_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -81,24 +100,17 @@ CREATE TABLE "Message" (
     CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "EventAttendee" (
-    "id" TEXT NOT NULL,
-    "attended" BOOLEAN NOT NULL DEFAULT false,
-    "attendedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "eventId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-
-    CONSTRAINT "EventAttendee_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EventAttendee_eventId_userId_key" ON "EventAttendee"("eventId", "userId");
+CREATE UNIQUE INDEX "TicketAssignee_ticketId_key" ON "TicketAssignee"("ticketId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TicketAssignee_userId_eventId_key" ON "TicketAssignee"("userId", "eventId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TicketAssignee_email_eventId_key" ON "TicketAssignee"("email", "eventId");
 
 -- AddForeignKey
 ALTER TABLE "Event" ADD CONSTRAINT "Event_organizerId_fkey" FOREIGN KEY ("organizerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -107,7 +119,7 @@ ALTER TABLE "Event" ADD CONSTRAINT "Event_organizerId_fkey" FOREIGN KEY ("organi
 ALTER TABLE "TicketType" ADD CONSTRAINT "TicketType_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_purchaserId_fkey" FOREIGN KEY ("purchaserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -116,13 +128,16 @@ ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_eventId_fkey" FOREIGN KEY ("eventId"
 ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_ticketTypeId_fkey" FOREIGN KEY ("ticketTypeId") REFERENCES "TicketType"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TicketAssignee" ADD CONSTRAINT "TicketAssignee_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TicketAssignee" ADD CONSTRAINT "TicketAssignee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TicketAssignee" ADD CONSTRAINT "TicketAssignee_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EventAttendee" ADD CONSTRAINT "EventAttendee_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EventAttendee" ADD CONSTRAINT "EventAttendee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
