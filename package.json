@@ -2,13 +2,14 @@
   "name": "eventify-api",
   "version": "1.0.0",
   "description": "Eventify API is a RESTful API for managing events, tickets, users, and more. This API allows you to create, update, delete, and retrieve information about events, users, tickets, messages, analytics, attendees, and virtual events.",
-  "main": "index.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "NODE_ENV=development && node src/app.js",
+    "start": "NODE_ENV=production && node src/app.js",
     "dev": "NODE_ENV=development && node --watch src/app.js",
+    "test": "NODE_ENV=test && jest",
+    "build": "prisma generate && prisma migrate deploy",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "test": "NODE_ENV=test && jest"
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
