@@ -848,6 +848,35 @@ DELETE /tickets/:ticketId/assign
 
 **Response**: HTTP 204 (No Content)
 
+### Check In Ticket
+
+> Validates a ticket and checks in the associated attendee
+
+```
+POST /tickets/:ticketId/check-in
+```
+
+**Authorization**: Bearer token required (event organizer only)
+
+**Example Response**
+
+```json
+{
+  "message": "Check-in successful",
+  "ticketId": "tck_1234",
+  "ticketType": "VIP Pass",
+  "eventId": "evt_1234",
+  "eventTitle": "Tech Conference 2025",
+  "attendee": {
+    "id": "asn_1234",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "attendee@example.com",
+    "checkedInAt": "2025-03-16T10:15:30Z"
+  }
+}
+```
+
 ## Messages
 
 ### Send Message
@@ -973,37 +1002,6 @@ GET /events/:id/attendees
     }
   }
 ]
-```
-
-### Check In Attendee
-
-> Checks in an attendee to an event
-
-```
-POST /events/:id/attendees/:assigneeId/check-in
-```
-
-**Authorization**: Bearer token required (event organizer only)
-
-**Example Response**
-
-```json
-{
-  "id": "asn_1234",
-  "email": "attendee@example.com",
-  "firstName": "Jane",
-  "lastName": "Smith",
-  "attendedAt": "2025-05-15T10:30:00Z",
-  "ticketId": "tck_1234",
-  "userId": "user_5678",
-  "eventId": "evt_1234",
-  "user": {
-    "id": "user_5678",
-    "email": "attendee@example.com",
-    "firstName": "Jane",
-    "lastName": "Smith"
-  }
-}
 ```
 
 ### Invite Attendees

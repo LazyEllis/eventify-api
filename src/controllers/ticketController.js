@@ -406,6 +406,104 @@ const getTicketDetails = asyncHandler(async (req, res) => {
   res.json(ticket);
 });
 
+const checkInTicket = asyncHandler(async (req, res) => {
+  const { ticketId } = req.params;
+
+  // Find the ticket with its associated event, assignee, and ticket type
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      event: true,
+      assignee: true,
+      ticketType: {
+        select: { name: true },
+      },
+    },
+  });
+
+  // Verify the ticket exists
+  if (!ticket) {
+    throw new NotFoundError("Ticket not found");
+  }
+
+  // Verify that the current user is the organizer of the event
+  if (ticket.event.organizerId !== req.user.id) {
+    throw new BadRequestError(
+      "You are not authorized to check in attendees for this event",
+    );
+  }
+
+  // Check if the ticket is valid
+  if (ticket.status !== "VALID") {
+    throw new BadRequestError(
+      `Cannot check in: Ticket is ${ticket.status.toLowerCase()}`,
+    );
+  }
+
+  // Verify the event is currently happening
+  const now = new Date();
+  if (now < ticket.event.startDate) {
+    throw new BadRequestError("Cannot check in before event starts");
+  }
+
+  if (now > ticket.event.endDate) {
+    throw new BadRequestError("Cannot check in after event ends");
+  }
+
+  // Find the ticket assignee
+  if (!ticket.assignee) {
+    throw new BadRequestError("Ticket has not been assigned to an attendee");
+  }
+
+  // Check if attendee has already been checked in
+  if (ticket.assignee.attendedAt) {
+    throw new BadRequestError("Attendee has already been checked in");
+  }
+
+  // Perform the check-in operation in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Update the ticket status to USED
+    const updatedTicket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: { status: "USED" },
+    });
+
+    // Update the attendee record with the check-in time
+    const updatedAttendee = await tx.ticketAssignee.update({
+      where: { id: ticket.assignee.id },
+      data: { attendedAt: new Date() },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return { ticket: updatedTicket, attendee: updatedAttendee };
+  });
+
+  // Return the check-in details
+  res.status(200).json({
+    message: "Check-in successful",
+    ticketId: result.ticket.id,
+    ticketType: ticket.ticketType.name,
+    eventId: ticket.eventId,
+    eventTitle: ticket.event.title,
+    attendee: {
+      id: result.attendee.id,
+      firstName: result.attendee.firstName,
+      lastName: result.attendee.lastName,
+      email: result.attendee.email,
+      checkedInAt: result.attendee.attendedAt,
+    },
+  });
+});
+
 module.exports = {
   purchaseTicket,
   verifyPayment,
@@ -413,4 +511,5 @@ module.exports = {
   getTicketDetails,
   assignTicket,
   removeTicketAssignment,
+  checkInTicket,
 };

@@ -1,7 +1,6 @@
 const express = require("express");
 const {
   getEventAttendees,
-  checkInAttendee,
   inviteAttendees,
 } = require("../controllers/attendeeController");
 const { protect } = require("../middleware/auth");
@@ -15,13 +14,6 @@ router.get(
   protect,
   validateEventOwnership,
   getEventAttendees,
-);
-
-router.post(
-  "/events/:id/attendees/:assigneeId/check-in",
-  protect,
-  validateEventOwnership,
-  checkInAttendee,
 );
 
 router.post(

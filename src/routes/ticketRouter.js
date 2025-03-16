@@ -6,6 +6,7 @@ const {
   getTicketDetails,
   assignTicket,
   removeTicketAssignment,
+  checkInTicket,
 } = require("../controllers/ticketController");
 const { protect } = require("../middleware/auth");
 const {
@@ -29,5 +30,6 @@ router.post(
   assignTicket,
 );
 router.delete("/:ticketId/assign", protect, removeTicketAssignment);
+router.post("/:ticketId/check-in", protect, checkInTicket);
 
 module.exports = router;
