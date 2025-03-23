@@ -261,9 +261,6 @@ const assignTicket = asyncHandler(async (req, res) => {
         ticketId,
         userId,
         eventId: ticket.eventId,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
       },
     });
 

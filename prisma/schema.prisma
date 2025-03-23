@@ -89,9 +89,9 @@ model Ticket {
 // New model for ticket assignees
 model TicketAssignee {
   id          String    @id @default(uuid())
-  email       String    // Optional if linked to a user      
-  firstName   String    // Optional if linked to a user
-  lastName    String    // Optional if linked to a user
+  email       String?    // Optional if linked to a user      
+  firstName   String?    // Optional if linked to a user
+  lastName    String?    // Optional if linked to a user
   attendedAt  DateTime? 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
