@@ -148,17 +148,19 @@ PUT /users/profile
 
 **Parameters**
 
-| Field       | Type   | Description                   |
-| ----------- | ------ | ----------------------------- |
-| `firstName` | string | _Optional_. User's first name |
-| `lastName`  | string | _Optional_. User's last name  |
+| Field       | Type   | Description                      |
+| ----------- | ------ | -------------------------------- |
+| `firstName` | string | _Optional_. User's first name    |
+| `lastName`  | string | _Optional_. User's last name     |
+| `email`     | string | _Optional_. User's email address |
 
 **Example Request**
 
 ```json
 {
   "firstName": "Johnny",
-  "lastName": "Doe"
+  "lastName": "Doe",
+  "email": "user@example.com"
 }
 ```
 

@@ -26,6 +26,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     data: {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
+      email: req.body.email,
     },
   });
   res.json(user);
