@@ -318,6 +318,13 @@ const removeTicketAssignment = asyncHandler(async (req, res) => {
     throw new NotFoundError("Ticket is not assigned");
   }
 
+  // Check if attendee has already checked in
+  if (ticket.assignee.attendedAt) {
+    throw new BadRequestError(
+      "Cannot remove assignment after attendee has checked in",
+    );
+  }
+
   // Remove assignment
   await prisma.ticketAssignee.delete({
     where: { ticketId },
