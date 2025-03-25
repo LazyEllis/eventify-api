@@ -30,7 +30,15 @@ const validateEvent = validate([
   body("title").notEmpty().trim(),
   body("description").notEmpty(),
   body("startDate").isISO8601().toDate(),
-  body("endDate").isISO8601().toDate(),
+  body("endDate")
+    .isISO8601()
+    .toDate()
+    .custom((value, { req }) => {
+      if (new Date(value) <= new Date(req.body.startDate)) {
+        throw new Error("End date must be after start date");
+      }
+      return true;
+    }),
   body("eventType")
     .isIn(["PHYSICAL", "VIRTUAL", "HYBRID"])
     .withMessage("Invalid event type"),
