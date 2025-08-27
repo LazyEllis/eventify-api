@@ -1,11 +1,13 @@
 const asyncHandler = require("express-async-handler");
 const prisma = require("../config/database");
-const paystack = require("paystack-api")(process.env.PAYSTACK_SECRET_KEY);
+const Paystack = require("@paystack/paystack-sdk");
 const {
   NotFoundError,
   BadRequestError,
   ForbiddenError,
 } = require("../utils/errors");
+
+const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY);
 
 const purchaseTicket = asyncHandler(async (req, res) => {
   const { eventId, tickets } = req.body;
@@ -82,7 +84,7 @@ const purchaseTicket = asyncHandler(async (req, res) => {
       metadata: {
         eventId,
         purchaserId: req.user.id,
-        tickets: tickets,
+        tickets,
         custom_fields: [
           {
             display_name: "Event Name",
@@ -141,7 +143,6 @@ const verifyPayment = asyncHandler(async (req, res) => {
   const reference = req.paymentReference;
 
   try {
-    // First verify the transaction exists
     const transaction = await paystack.transaction.verify({ reference });
 
     if (!transaction || !transaction.data) {
@@ -149,12 +150,11 @@ const verifyPayment = asyncHandler(async (req, res) => {
     }
 
     if (transaction.data.status === "success") {
-      // Update tickets status
+      // Mark tickets as VALID
       await prisma.ticket.updateMany({
         where: { paymentReference: reference },
         data: { status: "VALID" },
       });
-
       res.json({ message: "Payment verified successfully" });
     } else {
       // Revert ticket quantities and mark tickets as cancelled
